@@ -17,6 +17,20 @@ const DATE_LOCALES = {
   pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN'
 }
 
+// The language a profile starts in, before anyone has been to Settings. The browser's own
+// preference list is the only signal we have, and it is a good one: a phone set to Spanish
+// asks for Spanish. Region is dropped ('es-419' and 'es-ES' are both es) because the locale
+// files are per language, not per region. English when nothing in the list is translated —
+// same as before, just no longer the answer for everyone.
+export function detectLang(nav = typeof navigator === 'undefined' ? null : navigator) {
+  const prefs = nav ? (nav.languages?.length ? nav.languages : [nav.language]) : []
+  for (const tag of prefs) {
+    const base = String(tag || '').toLowerCase().split('-')[0]
+    if (LANGS[base]) return base
+  }
+  return 'en'
+}
+
 const localePacks = import.meta.glob('../locales/*.js')
 const instrPacks = import.meta.glob('../instr/*.js')
 

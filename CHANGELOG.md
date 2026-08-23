@@ -30,6 +30,17 @@ label and nowhere else. Stats now answers the question the number was recorded f
   sit higher.
 - Translated into all 12 UI languages.
 
+### It opens in your language
+
+- 🌍 **The UI language now follows the browser on first run.** Twelve translations shipped, and
+  every new profile still started in English — the language lived in Settings and nowhere else,
+  so a phone set to Spanish had to be told, in English, that it speaks Spanish. A profile that
+  has never chosen now takes the first translated language the browser asks for, and falls back
+  to English when it asks for none we have.
+- **A language you picked is still the language you get.** Detection only fills the default;
+  a stored choice wins on every load, so nothing switches under anyone who already set it.
+- Region is ignored (`es-419` and `es-ES` are both `es`) — the locale files are per language.
+
 ## v1.2.3 — 2026-07-31
 
 How hard a set was, in whichever of the two scales you already think in — and the ratings your
