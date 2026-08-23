@@ -66,7 +66,7 @@ el correo como alternativa.
   sustituirlo en esos sitios.
 - **Precios**: los planes de automatización (490 € / 890 € / a medida) se muestran siempre con
   «desde» y con una nota que aclara que el importe depende de la complejidad. Los precios de
-  infraestructura vienen de la versión anterior: conviene confirmarlos antes de publicar.
+  infraestructura (hosting, VPS, correo y dominios) están confirmados y se mantienen como están.
 
 ## Criterio de contenido
 
