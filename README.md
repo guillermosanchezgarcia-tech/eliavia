@@ -59,14 +59,17 @@ Recibirá un `POST` con `Content-Type: application/json` y este cuerpo:
 Si la respuesta es `2xx`, el formulario se limpia y muestra la confirmación. Si falla, se ofrece
 el correo como alternativa.
 
-## Antes de publicar
+## Dominio y precios
 
-- **Dominio**: `index.html` usa `https://fluxoria.es/` en `canonical`, Open Graph, Twitter Cards
-  y Schema.org, y `sitemap.xml`/`robots.txt` hacen lo mismo. Si el dominio final es otro, hay que
-  sustituirlo en esos sitios.
+Ambos están confirmados y no requieren cambios para publicar.
+
+- **Dominio**: `fluxoria.es`. Aparece en `canonical`, Open Graph, Twitter Cards y Schema.org
+  dentro de `index.html`, y en `sitemap.xml` y `robots.txt`. Si algún día cambiara, hay que
+  sustituirlo en esos tres archivos.
 - **Precios**: los planes de automatización (490 € / 890 € / a medida) se muestran siempre con
   «desde» y con una nota que aclara que el importe depende de la complejidad. Los precios de
-  infraestructura (hosting, VPS, correo y dominios) están confirmados y se mantienen como están.
+  infraestructura (hosting, VPS, correo y dominios) son correctos, igual que las condiciones de
+  facturación sin permanencia y el dominio de regalo el primer año con hosting y correo.
 
 ## Criterio de contenido
 
