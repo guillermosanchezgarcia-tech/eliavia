@@ -1,0 +1,44 @@
+name: alma_serena
+description: "Alma Serena: app de meditación y bienestar en español."
+publish_to: 'none'
+
+# version: se usa para Google Play. 1.0.0 es el nombre visible y +1 el número
+# de compilación (hay que subirlo en cada subida a Play Console).
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Traducciones nativas de los widgets de Material al español.
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Gestión de estado. Elegimos provider (en vez de bloc o riverpod) porque es
+  # la opción oficial más sencilla de leer para un proyecto de este tamano.
+  provider: ^6.1.2
+
+  # Guardado local sencillo (clave -> valor): onboarding visto, sesión del
+  # usuario, racha e historial. Sustituible por Firestore mas adelante.
+  shared_preferences: ^2.3.3
+
+  # Formato de fechas en español ("miércoles, 5 de marzo").
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # TODO(audio): cuando tengas los audios reales, descomenta estas lineas y
+  # deja los ficheros .mp3 dentro de assets/audio/.
+  # assets:
+  #   - assets/audio/
