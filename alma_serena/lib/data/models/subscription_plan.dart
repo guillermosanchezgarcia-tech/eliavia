@@ -23,12 +23,12 @@ class SubscriptionPlan {
   final PlanPeriod period;
   final String title;
 
-  /// Precio ya formateado, por ejemplo "7,99 €".
+  /// Precio ya formateado, por ejemplo "4,99 €".
   final String price;
 
   /// Texto pequeno bajo el precio ("facturado cada mes").
   final String priceDetail;
 
-  /// Etiqueta destacada opciónal ("Ahorras un 47 %").
+  /// Etiqueta destacada opcional ("Ahorras un 50 %").
   final String? highlight;
 }
