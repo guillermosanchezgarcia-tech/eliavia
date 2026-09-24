@@ -105,9 +105,21 @@ test/                  Pruebas automáticas
 ## Pruebas
 
 ```bash
-flutter test      # 22 pruebas: formato de fechas, racha, acceso y onboarding
+flutter test      # 26 pruebas: formato de fechas, racha, acceso, catálogo y onboarding
 flutter analyze   # revisa el código en busca de errores
 ```
+
+---
+
+## El estudio de audio
+
+La carpeta `estudio/` es el taller donde se fabrican los audios: los sonidos
+de fondo (que se generan por ordenador, así que se pueden retocar sin volver a
+grabar) y las sesiones con voz, con la herramienta que limpia una grabación
+casera y la mezcla con el fondo. Está explicado paso a paso, sin tecnicismos,
+en [`estudio/LEEME.md`](estudio/LEEME.md).
+
+No forma parte de la app: no se compila ni se instala en el móvil.
 
 ---
 
