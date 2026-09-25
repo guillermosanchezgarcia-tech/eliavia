@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Albarán Digital</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <h1>Albarán Digital</h1>
+</header>
+
+<main>
+  <div class="tenant-bar">
+    <label for="tenantId"><strong>Empresa:</strong></label>
+    <input type="text" id="tenantId" placeholder="ej. comercializadora-abc">
+    <span class="hint">Identifica tu espacio de datos. Usa siempre el mismo nombre.</span>
+  </div>
+
+  <nav class="tabs">
+    <button id="tabUpload" class="active">Subir albarán</button>
+    <button id="tabHistorico">Histórico</button>
+  </nav>
+
+  <section id="viewUpload" class="view active">
+    <div class="drop" id="dropZone">
+      <p>Arrastra aquí una foto o PDF del albarán, o selecciona un archivo.</p>
+      <input type="file" id="fileInput" accept="application/pdf,image/*">
+    </div>
+    <button id="btnExtraer">Extraer datos</button>
+    <div id="uploadMsg"></div>
+
+    <div id="validationBlock" style="display:none;">
+      <h3>Revisa y corrige antes de confirmar</h3>
+      <div>
+        <label>Proveedor: <input type="text" id="fProveedor"></label>
+        <label>Nº Albarán: <input type="text" id="fNumero"></label>
+        <label>Fecha: <input type="date" id="fFecha"></label>
+      </div>
+      <table id="lineasTable">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Unidad</th>
+            <th>Precio unitario</th>
+            <th>Importe</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="lineasBody"></tbody>
+      </table>
+      <div class="actions">
+        <button id="btnAddLinea">+ Añadir línea</button>
+      </div>
+      <div>
+        <label>Total: <input type="text" id="fTotal"></label>
+      </div>
+      <div class="actions">
+        <button id="btnConfirmar">Confirmar y guardar</button>
+        <button id="btnCancelar">Cancelar</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="viewHistorico" class="view">
+    <div class="actions">
+      <button id="btnRefrescar">Refrescar</button>
+      <a id="linkExport" href="#"><button id="btnExport">Exportar CSV</button></a>
+    </div>
+    <table id="historicoTable">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Proveedor</th>
+          <th>Nº Albarán</th>
+          <th>Líneas</th>
+          <th>Total</th>
+          <th>Registrado</th>
+        </tr>
+      </thead>
+      <tbody id="historicoBody"></tbody>
+    </table>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
