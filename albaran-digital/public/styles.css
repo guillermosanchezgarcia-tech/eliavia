@@ -1,0 +1,129 @@
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  color: #222;
+  background: #f2f2f2;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background: #2c3e50;
+  color: #fff;
+  padding: 10px 20px;
+}
+
+header h1 {
+  font-size: 18px;
+  margin: 0;
+}
+
+main {
+  max-width: 1000px;
+  margin: 20px auto;
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 20px;
+}
+
+.tenant-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ccc;
+}
+
+nav.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+nav.tabs button {
+  padding: 6px 14px;
+  border: 1px solid #999;
+  background: #e6e6e6;
+  cursor: pointer;
+}
+
+nav.tabs button.active {
+  background: #2c3e50;
+  color: #fff;
+  border-color: #2c3e50;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  text-align: left;
+}
+
+th {
+  background: #eee;
+}
+
+td input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #bbb;
+  padding: 2px 4px;
+}
+
+input[type="text"], input[type="date"] {
+  padding: 4px;
+  border: 1px solid #999;
+}
+
+button {
+  padding: 6px 12px;
+}
+
+.actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.msg {
+  margin: 8px 0;
+  padding: 6px 10px;
+  border: 1px solid #999;
+}
+
+.msg.error {
+  background: #fde;
+  border-color: #c00;
+}
+
+.msg.ok {
+  background: #efe;
+  border-color: #080;
+}
+
+.hint {
+  color: #555;
+  font-size: 12px;
+}
+
+.drop {
+  border: 2px dashed #999;
+  padding: 30px;
+  text-align: center;
+  margin-bottom: 12px;
+}
