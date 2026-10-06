@@ -54,6 +54,7 @@ select o.id as owner_id,
      group by owner_id
   ) od on od.owner_id = o.id;
 
+revoke all on public.v_receipts, public.v_owner_balances from anon;
 grant select on public.v_receipts, public.v_owner_balances to authenticated;
 
 -- ---------- Informe de ingresos y gastos por partida y periodo ----------
@@ -260,3 +261,21 @@ begin
     execute format('grant execute on function %s to authenticated', f);
   end loop;
 end $$;
+
+-- ---------- Usuarios con acceso a la comunidad (para el administrador) ----------
+create or replace function public.community_members(p_community uuid)
+returns table (user_id uuid, email text, role public.member_role)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not is_admin(p_community) then
+    raise exception 'No autorizado' using errcode = '42501';
+  end if;
+  return query
+  select m.user_id, p.email, m.role
+    from memberships m left join profiles p on p.id = m.user_id
+   where m.community_id = p_community
+   order by m.role, p.email;
+end $$;
+
+revoke execute on function public.community_members(uuid) from public, anon;
+grant execute on function public.community_members(uuid) to authenticated;

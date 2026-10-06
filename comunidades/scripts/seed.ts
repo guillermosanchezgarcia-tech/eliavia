@@ -4,6 +4,7 @@
  *
  * Uso:   npm run db:seed            (la primera vez)
  *        npm run db:seed -- --reset (borra los datos de ejemplo y los vuelve a crear)
+ *        npm run db:remove-demo     (borra los datos de ejemplo, p. ej. antes de trabajar con datos reales)
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Client } from "pg";
@@ -71,13 +72,18 @@ export async function seed() {
   if (!url || !serviceKey) {
     throw new Error("Faltan NEXT_PUBLIC_SUPABASE_URL y/o SUPABASE_SERVICE_ROLE_KEY en .env.local");
   }
-  const reset = process.argv.includes("--reset");
+  const remove = process.argv.includes("--remove");
+  const reset = remove || process.argv.includes("--reset");
   const supa = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const db = dbClient();
   await db.connect();
 
   try {
     const existing = await db.query("select id from communities where name = any($1)", [[COMMUNITY_NAME, COMMUNITY2_NAME]]);
+    if (remove && !existing.rowCount) {
+      console.log("ℹ No hay datos de ejemplo que borrar.");
+      return;
+    }
     if (existing.rowCount && !reset) {
       console.log("ℹ Los datos de ejemplo ya existen. Para volver a crearlos: npm run db:seed -- --reset");
       return;
@@ -87,13 +93,29 @@ export async function seed() {
     const users = await ensureUsers(supa);
 
     await db.query("begin");
+    let oldFiles: string[] = [];
     if (existing.rowCount) {
       console.log("→ Borrando los datos de ejemplo anteriores");
       const ids = existing.rows.map((r) => r.id);
       const docs = await db.query("select storage_path from documents where community_id = any($1)", [ids]);
-      if (docs.rowCount) await supa.storage.from("documentos").remove(docs.rows.map((d) => d.storage_path));
+      oldFiles = docs.rows.map((d) => d.storage_path);
       await db.query("update fiscal_years set status = 'open' where community_id = any($1)", [ids]);
+      // Borrado en orden (de las tablas dependientes a la comunidad)
+      for (const table of [
+        "journal_entries", "receipts", "payments", "expenses", "documents", "budgets", "ownerships", "allocation_keys",
+        "property_groups", "owners", "properties", "suppliers", "categories", "bank_accounts", "fiscal_years",
+        "receipt_counters", "memberships",
+      ]) {
+        await db.query(`delete from ${table} where community_id = any($1)`, [ids]);
+      }
       await db.query("delete from communities where id = any($1)", [ids]);
+    }
+
+    if (remove) {
+      await db.query("commit");
+      if (oldFiles.length) await supa.storage.from("documentos").remove(oldFiles);
+      console.log("✔ Datos de ejemplo borrados. Los usuarios de prueba (@example.com) puedes eliminarlos en Supabase → Authentication → Users.");
+      return;
     }
 
     const uploads: Upload[] = [];
@@ -106,6 +128,8 @@ export async function seed() {
       if (error) throw new Error(`Error subiendo ${u.path}: ${error.message}`);
     }
     await db.query("commit");
+    const stale = oldFiles.filter((f) => !uploads.some((u) => u.path === f));
+    if (stale.length) await supa.storage.from("documentos").remove(stale);
     console.log(`✔ Datos de ejemplo creados (comunidad ${cid}).`);
     console.log(`\nUsuarios de prueba (contraseña para todos: ${DEMO_PASSWORD})`);
     console.log(`  Administradora: ${USERS.admin.email}`);
