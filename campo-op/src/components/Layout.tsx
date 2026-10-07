@@ -2,15 +2,16 @@
 //   · Móvil: barra de navegación abajo, al alcance del pulgar.
 //   · Ordenador: menú lateral a la izquierda.
 
-import { ArrowLeft, CloudOff, House, Map as IconoMapa, Menu, Sprout, Users, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, House, Map as IconoMapa, Menu, Sprout, Users, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { usePerfil } from '../auth/contexto'
 import { config } from '../config'
-import { useConexion } from '../hooks/useConexion'
 import { cx } from '../lib/cx'
 import { NOMBRES_ROL } from '../lib/tipos'
+import { MotorSincronizacion } from '../datos/MotorSincronizacion'
 import { AvisoActualizacion } from './AvisoActualizacion'
+import { IndicadorSincronizacion } from './IndicadorSincronizacion'
 import { Logo } from './Logo'
 
 interface Seccion {
@@ -36,6 +37,7 @@ export function Layout() {
       </main>
       <BarraInferior />
       <AvisoActualizacion />
+      <MotorSincronizacion />
     </div>
   )
 }
@@ -121,22 +123,31 @@ function MenuLateral() {
 }
 
 /** Cabecera de cada pantalla: título, botón «atrás» opcional y acciones. */
-export function Cabecera({ titulo, subtitulo, atras, acciones }: {
+export function Cabecera({ titulo, subtitulo, atras, acciones, children }: {
   titulo: string
   subtitulo?: ReactNode
-  /** Ruta a la que vuelve la flecha. Con `true` vuelve a la pantalla anterior. */
+  /**
+   * A dónde vuelve la flecha: una ruta fija, o `true` para volver a la
+   * pantalla anterior (si se llegó por un enlace directo, va al inicio).
+   */
   atras?: string | true
   acciones?: ReactNode
+  /** Contenido fijo bajo el título (buscador, filtros…). */
+  children?: ReactNode
 }) {
   const navegar = useNavigate()
-  const conexion = useConexion()
+  const volver = () => {
+    if (atras !== true) navegar(atras ?? '/')
+    else if ((window.history.state as { idx?: number } | null)?.idx) navegar(-1)
+    else navegar('/')
+  }
   return (
-    <header className="pt-seguro sticky top-0 z-20 border-b border-stone-200/80 bg-fondo/90 backdrop-blur">
+    <header className="pt-seguro sticky top-0 z-20 border-b border-stone-200/80 bg-fondo">
       <div className="mx-auto flex min-h-16 max-w-3xl items-center gap-2 px-4 lg:px-8">
         {atras && (
           <button
             type="button"
-            onClick={() => (atras === true ? navegar(-1) : navegar(atras))}
+            onClick={volver}
             className="-ml-2 grid size-12 shrink-0 place-items-center rounded-full text-stone-700 hover:bg-stone-200/60 active:bg-stone-200"
             aria-label="Volver"
           >
@@ -147,14 +158,10 @@ export function Cabecera({ titulo, subtitulo, atras, acciones }: {
           <h1 className="truncate text-xl font-bold text-stone-900">{titulo}</h1>
           {subtitulo && <p className="truncate text-sm text-stone-500">{subtitulo}</p>}
         </div>
-        {!conexion && (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">
-            <CloudOff className="size-4" aria-hidden />
-            Sin conexión
-          </span>
-        )}
+        <IndicadorSincronizacion />
         {acciones}
       </div>
+      {children && <div className="mx-auto max-w-3xl px-4 pb-3 lg:px-8">{children}</div>}
     </header>
   )
 }

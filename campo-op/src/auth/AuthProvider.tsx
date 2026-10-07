@@ -1,5 +1,6 @@
 import { isAuthRetryableFetchError } from '@supabase/supabase-js'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { vaciarDatosLocales } from '../datos/db'
 import { esErrorDeConexion, mensajeDeError } from '../lib/errores'
 import { supabase } from '../lib/supabase'
 import type { Perfil } from '../lib/tipos'
@@ -102,6 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const cerrarSesion = useCallback(async () => {
+    // Los datos de la OP no se quedan en el móvil al salir.
+    await vaciarDatosLocales()
     const { error } = await supabase.auth.signOut({ scope: 'local' })
     if (error) {
       // Sin conexión Supabase no puede avisar al servidor; borramos la sesión

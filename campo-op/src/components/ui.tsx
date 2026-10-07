@@ -8,16 +8,24 @@ import {
   TriangleAlert,
   type LucideIcon,
 } from 'lucide-react'
-import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react'
+import {
+  useEffect,
+  useId,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+} from 'react'
 import { Link } from 'react-router'
 import { cx } from '../lib/cx'
 
-type VarianteBoton = 'primario' | 'secundario' | 'peligro' | 'fantasma'
+type VarianteBoton = 'primario' | 'secundario' | 'peligro' | 'eliminar' | 'fantasma'
 
 const ESTILO_BOTON: Record<VarianteBoton, string> = {
   primario: 'bg-marca-700 text-white shadow-sm hover:bg-marca-800 active:bg-marca-900',
   secundario: 'bg-white text-stone-800 ring-1 ring-stone-300 hover:bg-stone-50 active:bg-stone-100',
   peligro: 'bg-white text-red-700 ring-1 ring-red-200 hover:bg-red-50 active:bg-red-100',
+  eliminar: 'bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800',
   fantasma: 'text-marca-800 hover:bg-marca-50 active:bg-marca-100',
 }
 
@@ -193,5 +201,137 @@ export function Vacio({ icono: Icono, titulo, children, accion }: {
       {children && <div className="mt-2 max-w-sm text-sm leading-relaxed text-stone-600">{children}</div>}
       {accion && <div className="mt-6">{accion}</div>}
     </div>
+  )
+}
+
+interface PropsAreaTexto extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  etiqueta: string
+  ayuda?: ReactNode
+}
+
+export function AreaTexto({ etiqueta, ayuda, className, id, ...props }: PropsAreaTexto) {
+  const idAuto = useId()
+  const idCampo = id ?? idAuto
+  return (
+    <div className={className}>
+      <label htmlFor={idCampo} className="mb-1.5 block text-sm font-medium text-stone-700">
+        {etiqueta}
+      </label>
+      <textarea
+        id={idCampo}
+        rows={4}
+        className="block w-full rounded-xl border border-stone-300 bg-white px-3.5 py-3 text-stone-900 placeholder:text-stone-400 focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20 focus:outline-none"
+        {...props}
+      />
+      {ayuda && <p className="mt-1.5 text-sm text-stone-500">{ayuda}</p>}
+    </div>
+  )
+}
+
+/** Botones tipo «píldora» para elegir una opción entre pocas (p. ej. Activo / Baja). */
+export function Opciones<T extends string>({ etiqueta, opciones, valor, onChange, className }: {
+  etiqueta: string
+  opciones: { valor: T; texto: string; cuenta?: number }[]
+  valor: T
+  onChange: (valor: T) => void
+  className?: string
+}) {
+  return (
+    <div role="radiogroup" aria-label={etiqueta} className={cx('flex gap-2 overflow-x-auto', className)}>
+      {opciones.map((o) => {
+        const elegida = o.valor === valor
+        return (
+          <button
+            key={o.valor}
+            type="button"
+            role="radio"
+            aria-checked={elegida}
+            onClick={() => onChange(o.valor)}
+            className={cx(
+              'inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-medium ring-1 transition',
+              elegida
+                ? 'bg-marca-700 text-white ring-marca-700'
+                : 'bg-white text-stone-700 ring-stone-300 hover:bg-stone-50',
+            )}
+          >
+            {o.texto}
+            {o.cuenta !== undefined && (
+              <span className={cx('hidden tabular-nums sm:inline', elegida ? 'text-marca-100' : 'text-stone-400')}>
+                {o.cuenta}
+              </span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Botón redondo flotante abajo a la derecha (zona del pulgar) para «añadir». */
+export function BotonFlotante({ a, icono: Icono, texto }: { a: string; icono: LucideIcon; texto: string }) {
+  return (
+    <Link
+      to={a}
+      className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-20 inline-flex h-14 items-center gap-2 rounded-2xl bg-marca-700 pr-5 pl-4 font-semibold text-white shadow-lg shadow-marca-900/20 transition hover:bg-marca-800 active:scale-95 lg:right-8 lg:bottom-8"
+    >
+      <Icono className="size-6" aria-hidden />
+      {texto}
+    </Link>
+  )
+}
+
+/**
+ * Ventana de confirmación. En el móvil sale desde abajo (al alcance del
+ * pulgar) y en el ordenador, centrada.
+ */
+export function Dialogo({ abierto, titulo, children, acciones, alCerrar }: {
+  abierto: boolean
+  titulo: string
+  children?: ReactNode
+  acciones: ReactNode
+  alCerrar: () => void
+}) {
+  const idTitulo = useId()
+  useEffect(() => {
+    if (!abierto) return
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && alCerrar()
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  }, [abierto, alCerrar])
+
+  if (!abierto) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+      <div className="absolute inset-0 bg-stone-900/40" onClick={alCerrar} aria-hidden />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={idTitulo}
+        className="pb-seguro relative w-full max-w-md rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl sm:pb-5"
+      >
+        <h2 id={idTitulo} className="text-lg font-bold text-stone-900">
+          {titulo}
+        </h2>
+        {children && <div className="mt-2 text-sm leading-relaxed text-stone-600">{children}</div>}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">{acciones}</div>
+      </div>
+    </div>
+  )
+}
+
+/** Enlace con aspecto de botón (para ir a otra pantalla). */
+export function EnlaceBoton({ a, variante = 'primario', icono: Icono, bloque = false, className, children }: {
+  a: string
+  variante?: VarianteBoton
+  icono?: LucideIcon
+  bloque?: boolean
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <Link to={a} className={cx(BASE_BOTON, ESTILO_BOTON[variante], bloque && 'w-full', className)}>
+      {Icono && <Icono className="size-5" aria-hidden />}
+      {children}
+    </Link>
   )
 }

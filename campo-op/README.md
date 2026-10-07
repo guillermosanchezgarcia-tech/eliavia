@@ -19,7 +19,7 @@ SIGPAC, mapa con ortofoto y trabajo sin conexión en el campo.
 | **Tailwind CSS** | Sistema de estilos | El diseño: colores, tamaños, móvil y ordenador |
 | **PWA** | «Progressive Web App» | Que se instale en el móvil y abra sin conexión |
 | **Supabase** | Base de datos en la nube | Guardar socios, fincas, fotos y usuarios |
-| **IndexedDB (Dexie)** | Base de datos dentro del móvil | Trabajar sin cobertura (parte 4) |
+| **IndexedDB (Dexie)** | Base de datos dentro del móvil | Trabajar sin cobertura y sincronizar después |
 | **Leaflet** | Librería de mapas | Ortofoto PNOA y capa SIGPAC (parte 5) |
 | **Netlify** | Alojamiento web | Publicar la app en internet con una dirección propia |
 
@@ -35,11 +35,13 @@ Los mapas y las referencias SIGPAC salen de servicios **públicos y gratuitos** 
 
 - [x] **Parte 1 · Cimientos**: proyecto, diseño, app instalable, base de datos completa con
   reglas de seguridad, inicio de sesión, roles, recuperar contraseña y gestión de usuarios.
-- [ ] **Parte 2 · Socios**: listado con buscador, ficha del socio, alta, edición y baja.
+- [x] **Parte 2 · Socios**: listado con buscador, ficha del socio, alta, edición, baja y
+  eliminación. Incluye ya la **base del modo sin conexión**: todo se guarda primero en el
+  móvil y se sincroniza solo con Supabase (ver «Cómo funciona sin conexión»).
 - [ ] **Parte 3 · Fincas**: ficha completa, varios recintos SIGPAC, tipo de invernadero,
   superficie en ha y m², cultivo, campaña, certificaciones, fotos y última visita.
-- [ ] **Parte 4 · Sin conexión**: copia de los datos en el móvil, cola de cambios pendientes
-  y sincronización automática al recuperar cobertura.
+- [ ] **Parte 4 · Sin conexión, remate**: fotos sin cobertura, guardar zonas del mapa para
+  usarlas sin red y pruebas en el campo con móviles reales.
 - [ ] **Parte 5 · Mapa**: ortofoto PNOA + capa SIGPAC, contornos de las fincas, buscar
   parcela, «¿dónde estoy?» con su referencia SIGPAC y botón «Cómo llegar».
 - [ ] **Parte 6 · Informes**: filtros por socio, municipio, cultivo, tipo y certificación;
@@ -156,8 +158,33 @@ Necesario para que funcionen los enlaces de «He olvidado mi contraseña».
 Estas reglas están en la propia base de datos (no solo en la app), así que se cumplen
 siempre. Se pueden cambiar fácilmente en `supabase/01_esquema.sql`, sección 6.
 
+Si un técnico intenta algo que no le corresponde, la app ni siquiera le muestra el botón.
+
 Nada se borra de verdad: se marca como «eliminado» para que el borrado llegue también a
 los móviles que estaban sin conexión, y se puede recuperar desde Supabase si hace falta.
+
+---
+
+## Cómo funciona sin conexión
+
+1. La app guarda **una copia de los datos de la OP dentro del móvil**. La primera vez que
+   alguien entra en un dispositivo hace falta cobertura para descargarla.
+2. Todo lo que se guarda (un socio nuevo, un teléfono corregido…) se escribe **primero en
+   el móvil**, al instante, y se apunta en una lista de **cambios pendientes**.
+3. En cuanto hay conexión, la app **envía los pendientes** a Supabase y **descarga** lo que
+   hayan cambiado los demás. Lo hace sola: al abrir la app, al volver la cobertura, unos
+   segundos después de guardar y cada cinco minutos.
+4. Si dos personas cambian **campos distintos** del mismo socio, se conservan los dos
+   cambios. Si cambian el **mismo campo**, se queda el último que llega al servidor.
+5. Si el servidor **rechaza** un cambio (por ejemplo, dos altas sin conexión con el mismo
+   código de socio), aparece en **Más → Sincronización** con el motivo, para reintentarlo o
+   descartarlo. El resto de cambios siguen enviándose.
+
+En la cabecera siempre se ve el estado: «Sin conexión», «3 sin enviar», «Sincronizando» o
+«1 con error». Si no se ve nada, es que todo está al día.
+
+Al **cerrar sesión** se borran los datos del móvil. Si quedan cambios sin enviar, la app
+avisa antes.
 
 ---
 
@@ -183,6 +210,7 @@ campo-op/
 ├── supabase/
 │   ├── 01_esquema.sql         La base de datos completa (tablas y reglas de seguridad)
 │   └── pruebas/               Prueba automática de las reglas de seguridad
+├── pruebas/                   Prueba de la app completa contra un Supabase local
 └── src/                       El código de la app
     ├── main.tsx               Punto de arranque
     ├── App.tsx                Mapa de pantallas (qué se ve en cada dirección)
@@ -191,7 +219,8 @@ campo-op/
     ├── auth/                  Inicio de sesión y perfil del usuario
     ├── components/            Piezas reutilizables: botones, campos, menú, cabecera…
     ├── hooks/                 Utilidades: ¿hay conexión?, ¿se puede instalar?
-    ├── lib/                   Conexión con Supabase, tipos de datos, mensajes de error
+    ├── datos/                 Base de datos del móvil y sincronización con Supabase
+    ├── lib/                   Conexión con Supabase, tipos, validación de NIF, formatos
     └── pages/                 Las pantallas: acceso, inicio, socios, fincas, mapa, más…
 ```
 
@@ -213,5 +242,9 @@ cp .env.example .env.local   # y rellenar las claves
 npm run dev                  # app en http://localhost:5173
 npm run build                # comprobación de tipos + versión de producción en dist/
 npm run lint                 # revisión del código
+npm test                     # pruebas unitarias (validación de NIF, formatos…)
 npm run prueba:bd            # prueba del esquema y de los permisos en un PostgreSQL en memoria
 ```
+
+La prueba de la app completa contra un Supabase local está explicada en
+[`pruebas/README.md`](pruebas/README.md).

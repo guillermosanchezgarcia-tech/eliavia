@@ -8,10 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "prueba:bd": "node supabase/pruebas/esquema.test.mjs supabase/01_esquema.sql"
+    "test": "vitest run",
+    "prueba:bd": "node supabase/pruebas/esquema.prueba.mjs supabase/01_esquema.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
+    "dexie": "^4.4.6",
+    "dexie-react-hooks": "^4.4.0",
     "lucide-react": "^1.52.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
@@ -29,6 +32,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
-    "vite-plugin-pwa": "^2.0.0"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.3"
   }
 }

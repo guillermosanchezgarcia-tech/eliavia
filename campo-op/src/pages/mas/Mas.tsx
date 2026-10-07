@@ -1,12 +1,15 @@
-import { ChevronRight, Download, KeyRound, LogOut, Pencil, Share, Smartphone, UserCog } from 'lucide-react'
+import { ChevronRight, Download, KeyRound, LogOut, Pencil, RefreshCw, Share, Smartphone, UserCog } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useAuth, usePerfil } from '../../auth/contexto'
 import { Cabecera, Contenido } from '../../components/Layout'
-import { Aviso, Boton, Campo, FilaEnlace, Insignia, Tarjeta } from '../../components/ui'
+import { Aviso, Boton, Campo, Dialogo, FilaEnlace, Insignia, Tarjeta } from '../../components/ui'
+import { useAjuste, usePendientes } from '../../datos/consultas'
+import { CLAVE_ULTIMA_SINCRONIZACION } from '../../datos/sincronizacion'
 import { config } from '../../config'
 import { useConexion } from '../../hooks/useConexion'
 import { useInstalacion } from '../../hooks/useInstalacion'
 import { mensajeDeError } from '../../lib/errores'
+import { haceCuanto, iniciales } from '../../lib/formato'
 import { esIOS, estaInstalada, instalar } from '../../lib/instalacion'
 import { supabase } from '../../lib/supabase'
 import { NOMBRES_ROL } from '../../lib/tipos'
@@ -15,11 +18,16 @@ export function Mas() {
   const perfil = usePerfil()
   const { cerrarSesion } = useAuth()
   const [saliendo, setSaliendo] = useState(false)
-  const iniciales = (perfil.nombre || perfil.email)
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('')
+  const [avisoSalir, setAvisoSalir] = useState(false)
+  const pendientes = usePendientes()
+  const ultima = useAjuste<string>(CLAVE_ULTIMA_SINCRONIZACION)
+  const sinEnviar = pendientes?.length ?? 0
+  const conError = pendientes?.filter((p) => p.error).length ?? 0
+
+  async function salir() {
+    setSaliendo(true)
+    await cerrarSesion()
+  }
 
   return (
     <>
@@ -27,7 +35,7 @@ export function Mas() {
       <Contenido className="space-y-6">
         <Tarjeta className="flex items-center gap-4 p-4">
           <span className="grid size-14 shrink-0 place-items-center rounded-full bg-marca-700 text-lg font-bold text-white">
-            {iniciales}
+            {iniciales(perfil.nombre || perfil.email)}
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-lg font-semibold text-stone-900">{perfil.nombre || 'Sin nombre'}</p>
@@ -56,6 +64,19 @@ export function Mas() {
         )}
 
         <Seccion titulo="Aplicación">
+          <FilaEnlace
+            a="/mas/sincronizacion"
+            icono={RefreshCw}
+            titulo="Sincronización"
+            detalle={
+              conError
+                ? `${conError} ${conError === 1 ? 'cambio rechazado' : 'cambios rechazados'}`
+                : sinEnviar
+                  ? `${sinEnviar} ${sinEnviar === 1 ? 'cambio' : 'cambios'} sin enviar`
+                  : `Al día · última ${haceCuanto(ultima)}`
+            }
+            derecha={<Flecha />}
+          />
           <InstalarApp />
           <div className="flex items-center justify-between px-4 py-3 text-sm text-stone-500">
             <span>
@@ -70,14 +91,30 @@ export function Mas() {
           icono={LogOut}
           cargando={saliendo}
           bloque
-          onClick={async () => {
-            setSaliendo(true)
-            await cerrarSesion()
-          }}
+          onClick={() => (sinEnviar ? setAvisoSalir(true) : void salir())}
         >
           Cerrar sesión
         </Boton>
       </Contenido>
+
+      <Dialogo
+        abierto={avisoSalir}
+        titulo="Tienes cambios sin enviar"
+        alCerrar={() => setAvisoSalir(false)}
+        acciones={
+          <>
+            <Boton variante="secundario" onClick={() => setAvisoSalir(false)}>
+              No cerrar sesión
+            </Boton>
+            <Boton variante="eliminar" cargando={saliendo} onClick={() => void salir()}>
+              Cerrar y perderlos
+            </Boton>
+          </>
+        }
+      >
+        Hay {sinEnviar} {sinEnviar === 1 ? 'cambio que no ha llegado' : 'cambios que no han llegado'} al servidor. Si
+        cierras sesión ahora se perderán. Espera a tener cobertura para que se envíen.
+      </Dialogo>
     </>
   )
 }

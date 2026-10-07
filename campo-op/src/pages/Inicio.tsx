@@ -5,7 +5,9 @@ import { usePerfil } from '../auth/contexto'
 import { Cabecera, Contenido } from '../components/Layout'
 import { Aviso, Tarjeta } from '../components/ui'
 import { config } from '../config'
+import { useFincas, useSocios } from '../datos/consultas'
 import { useConexion } from '../hooks/useConexion'
+import { formatearNumero } from '../lib/formato'
 
 function saludo(hora: number) {
   if (hora < 6) return 'Buenas noches'
@@ -20,6 +22,9 @@ export function Inicio() {
   const [ahora] = useState(() => new Date())
   const fecha = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(ahora)
   const nombre = (perfil.nombre || perfil.email).split(' ')[0]
+  const socios = useSocios()
+  const fincas = useFincas()
+  const totalHa = (fincas ?? []).reduce((suma, f) => suma + (f.superficie_ha ?? 0), 0)
 
   return (
     <>
@@ -36,9 +41,9 @@ export function Inicio() {
             Resumen de {config.nombreOP}
           </h2>
           <div className="grid grid-cols-3 gap-3">
-            <Cifra valor="—" texto="Socios" />
-            <Cifra valor="—" texto="Fincas" />
-            <Cifra valor="—" texto="Hectáreas" />
+            <Cifra valor={socios ? formatearNumero(socios.filter((s) => s.estado === 'activo').length) : '—'} texto="Socios activos" />
+            <Cifra valor={fincas ? formatearNumero(fincas.length) : '—'} texto="Fincas" />
+            <Cifra valor={fincas ? formatearNumero(totalHa, totalHa < 100 ? 1 : 0) : '—'} texto="Hectáreas" />
           </div>
         </section>
 

@@ -1,4 +1,4 @@
-import { Map as IconoMapa, SearchX, Sprout, Users } from 'lucide-react'
+import { Map as IconoMapa, SearchX, Sprout } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
@@ -14,7 +14,11 @@ import { ConfiguracionPendiente, CuentaDesactivada, PantallaCargando, PantallaEr
 import { Inicio } from './pages/Inicio'
 import { CambiarClave } from './pages/mas/CambiarClave'
 import { Mas } from './pages/mas/Mas'
+import { Sincronizacion } from './pages/mas/Sincronizacion'
 import { Usuarios } from './pages/mas/Usuarios'
+import { FichaSocio } from './pages/socios/FichaSocio'
+import { FormularioSocio } from './pages/socios/FormularioSocio'
+import { ListaSocios } from './pages/socios/ListaSocios'
 
 export default function App() {
   if (!configurado) return <ConfiguracionPendiente />
@@ -51,21 +55,10 @@ function Rutas() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={recuperandoClave ? <Navigate to="/nueva-clave" replace /> : <Inicio />} />
-        <Route
-          path="socios/*"
-          element={
-            <EnConstruccion
-              titulo="Socios"
-              icono={Users}
-              parte={2}
-              puntos={[
-                'Listado de socios con buscador por nombre, código o NIF',
-                'Ficha completa del socio con todas sus fincas',
-                'Alta, edición y baja de socios',
-              ]}
-            />
-          }
-        />
+        <Route path="socios" element={<ListaSocios />} />
+        <Route path="socios/nuevo" element={<FormularioSocio />} />
+        <Route path="socios/:id" element={<FichaSocio />} />
+        <Route path="socios/:id/editar" element={<FormularioSocio />} />
         <Route
           path="fincas/*"
           element={
@@ -99,6 +92,7 @@ function Rutas() {
         />
         <Route path="mas" element={<Mas />} />
         <Route path="mas/clave" element={<CambiarClave />} />
+        <Route path="mas/sincronizacion" element={<Sincronizacion />} />
         <Route path="nueva-clave" element={<CambiarClave />} />
         <Route
           path="mas/usuarios"
