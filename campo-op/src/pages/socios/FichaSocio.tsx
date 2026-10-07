@@ -1,14 +1,12 @@
-import { useLiveQuery } from 'dexie-react-hooks'
-import { CloudUpload, Mail, MapPin, MessageCircle, Pencil, Phone, Sprout, Trash, UserX } from 'lucide-react'
+import { CloudUpload, Mail, MapPin, MessageCircle, Pencil, Phone, Plus, Sprout, Trash, UserX } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { usePerfil } from '../../auth/contexto'
 import { Cabecera, Contenido } from '../../components/Layout'
 import { Aviso, Boton, Cargando, Dialogo, EnlaceBoton, Insignia, Tarjeta, Vacio } from '../../components/ui'
-import { useFincasDeSocio, useNombresUsuarios, useSocio } from '../../datos/consultas'
-import { db } from '../../datos/db'
+import { useFincasDeSocio, useNombresUsuarios, useSinEnviar, useSocio } from '../../datos/consultas'
 import { eliminar } from '../../datos/escritura'
-import { NOMBRES_TIPO_FINCA, NOMBRES_TIPO_INVERNADERO } from '../../lib/catalogos'
+import { descripcionTipo } from '../../lib/fincas'
 import { formatearFecha, formatearFechaHora, formatearHa, formatearM2, iniciales } from '../../lib/formato'
 import type { Finca, Socio } from '../../lib/tipos'
 import { esMovilEspanol, esTelefonoEspanol, limpiarTelefono } from '../../lib/validacion'
@@ -51,10 +49,7 @@ function Ficha({ socio }: { socio: Socio }) {
   const navegar = useNavigate()
   const fincas = useFincasDeSocio(socio.id)
   const nombres = useNombresUsuarios()
-  const sinEnviar = useLiveQuery(
-    () => db.pendientes.where('[tabla+fila_id]').equals(['socios', socio.id]).count(),
-    [socio.id],
-  )
+  const sinEnviar = useSinEnviar('socios', socio.id)
   const [confirmarEliminar, setConfirmarEliminar] = useState(false)
   const [eliminando, setEliminando] = useState(false)
 
@@ -178,7 +173,7 @@ function Ficha({ socio }: { socio: Socio }) {
               <Cargando />
             ) : fincas.length === 0 ? (
               <Vacio icono={Sprout} titulo="Sin fincas todavía">
-                Las fincas de este socio aparecerán aquí. El alta de fincas llega en la parte 3.
+                Las fincas de este socio aparecerán aquí.
               </Vacio>
             ) : (
               <ul className="divide-y divide-stone-100">
@@ -188,6 +183,9 @@ function Ficha({ socio }: { socio: Socio }) {
               </ul>
             )}
           </Tarjeta>
+          <EnlaceBoton a={`/fincas/nueva?socio=${socio.id}`} variante="secundario" icono={Plus} bloque className="mt-3">
+            Añadir finca
+          </EnlaceBoton>
         </Seccion>
 
         <p className="px-1 text-xs leading-relaxed text-stone-500">
@@ -275,28 +273,26 @@ function AccionContacto({ href, icono, texto, externo = false }: {
 }
 
 function FilaFinca({ finca }: { finca: Finca }) {
-  const tipo = finca.tipo
-    ? finca.tipo === 'invernadero' && finca.tipo_invernadero
-      ? `Invernadero ${NOMBRES_TIPO_INVERNADERO[finca.tipo_invernadero].toLowerCase()}`
-      : NOMBRES_TIPO_FINCA[finca.tipo]
-    : null
+  const tipo = descripcionTipo(finca)
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-marca-50 text-marca-700" aria-hidden>
-        <Sprout className="size-5" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium text-stone-900">{finca.nombre}</span>
-        <span className="block truncate text-sm text-stone-500">
-          {[finca.cultivo, tipo, finca.campana].filter(Boolean).join(' · ') || 'Sin datos de cultivo'}
+    <li>
+      <Link to={`/fincas/${finca.id}`} className="flex items-center gap-3 px-4 py-3 transition hover:bg-stone-50 active:bg-stone-100">
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-marca-50 text-marca-700" aria-hidden>
+          <Sprout className="size-5" />
         </span>
-      </span>
-      <span className="shrink-0 text-right">
-        <span className="block text-sm font-semibold text-stone-800 tabular-nums">{formatearHa(finca.superficie_ha)}</span>
-        {finca.superficie_ha !== null && (
-          <span className="block text-xs text-stone-500 tabular-nums">{formatearM2(finca.superficie_ha)}</span>
-        )}
-      </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-medium text-stone-900">{finca.nombre}</span>
+          <span className="block truncate text-sm text-stone-500">
+            {[finca.cultivo, tipo, finca.campana].filter(Boolean).join(' · ') || 'Sin datos de cultivo'}
+          </span>
+        </span>
+        <span className="shrink-0 text-right">
+          <span className="block text-sm font-semibold text-stone-800 tabular-nums">{formatearHa(finca.superficie_ha)}</span>
+          {finca.superficie_ha !== null && (
+            <span className="block text-xs text-stone-500 tabular-nums">{formatearM2(finca.superficie_ha)}</span>
+          )}
+        </span>
+      </Link>
     </li>
   )
 }

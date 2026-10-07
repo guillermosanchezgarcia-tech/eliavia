@@ -1,4 +1,4 @@
-import { Map as IconoMapa, SearchX, Sprout } from 'lucide-react'
+import { Map as IconoMapa, SearchX } from 'lucide-react'
 import type { ReactElement } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
@@ -16,6 +16,9 @@ import { CambiarClave } from './pages/mas/CambiarClave'
 import { Mas } from './pages/mas/Mas'
 import { Sincronizacion } from './pages/mas/Sincronizacion'
 import { Usuarios } from './pages/mas/Usuarios'
+import { FichaFinca } from './pages/fincas/FichaFinca'
+import { FormularioFinca } from './pages/fincas/FormularioFinca'
+import { ListaFincas } from './pages/fincas/ListaFincas'
 import { FichaSocio } from './pages/socios/FichaSocio'
 import { FormularioSocio } from './pages/socios/FormularioSocio'
 import { ListaSocios } from './pages/socios/ListaSocios'
@@ -59,21 +62,10 @@ function Rutas() {
         <Route path="socios/nuevo" element={<FormularioSocio />} />
         <Route path="socios/:id" element={<FichaSocio />} />
         <Route path="socios/:id/editar" element={<FormularioSocio />} />
-        <Route
-          path="fincas/*"
-          element={
-            <EnConstruccion
-              titulo="Fincas"
-              icono={Sprout}
-              parte={3}
-              puntos={[
-                'Ficha de finca: tipo, superficie, cultivo, campaña y certificaciones',
-                'Referencias SIGPAC con varios recintos',
-                'Fotos, observaciones y fecha de la última visita',
-              ]}
-            />
-          }
-        />
+        <Route path="fincas" element={<ListaFincas />} />
+        <Route path="fincas/nueva" element={<FormularioFinca />} />
+        <Route path="fincas/:id" element={<FichaFinca />} />
+        <Route path="fincas/:id/editar" element={<FormularioFinca />} />
         <Route
           path="mapa"
           element={

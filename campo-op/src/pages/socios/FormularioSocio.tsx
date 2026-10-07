@@ -1,9 +1,9 @@
 import { Save } from 'lucide-react'
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 import { usePerfil } from '../../auth/contexto'
 import { Cabecera, Contenido } from '../../components/Layout'
-import { AreaTexto, Aviso, Boton, Campo, Cargando, Opciones, Tarjeta } from '../../components/ui'
+import { AreaTexto, Aviso, BarraGuardar, Boton, Campo, Cargando, GrupoFormulario, Opciones } from '../../components/ui'
 import { useSocio, useSocios } from '../../datos/consultas'
 import { crear, modificar } from '../../datos/escritura'
 import { hoy, normalizar } from '../../lib/formato'
@@ -95,7 +95,7 @@ function FormularioDatos({ socio, socios, inicial }: { socio: Socio | null; soci
   const [datos, setDatos] = useState<Formulario>(inicial)
   const [errores, setErrores] = useState<Errores>({})
   const [guardando, setGuardando] = useState(false)
-  const [errorGeneral, setErrorGeneral] = useState<string | null>(null)
+  const [errorGuardado, setErrorGuardado] = useState<string | null>(null)
 
   const codigosOcupados = useMemo(
     () => new Set(socios.filter((s) => s.id !== socio?.id).map((s) => normalizar(s.codigo))),
@@ -148,11 +148,8 @@ function FormularioDatos({ socio, socios, inicial }: { socio: Socio | null; soci
     ev.preventDefault()
     const e = validar()
     setErrores(e)
-    if (Object.keys(e).length) {
-      setErrorGeneral('Revisa los campos marcados en rojo.')
-      return
-    }
-    setErrorGeneral(null)
+    if (Object.keys(e).length) return
+    setErrorGuardado(null)
     setGuardando(true)
     const texto = (v: string) => v.trim() || null
     const valores = {
@@ -179,10 +176,11 @@ function FormularioDatos({ socio, socios, inicial }: { socio: Socio | null; soci
       }
     } catch (err) {
       setGuardando(false)
-      setErrorGeneral(err instanceof Error ? err.message : String(err))
+      setErrorGuardado(err instanceof Error ? err.message : String(err))
     }
   }
 
+  const hayErrores = Object.values(errores).some(Boolean)
   const campo = (nombre: keyof Formulario) => ({
     value: datos[nombre],
     onChange: (e: { target: { value: string } }) => cambiar(nombre, e.target.value as never),
@@ -194,7 +192,7 @@ function FormularioDatos({ socio, socios, inicial }: { socio: Socio | null; soci
       <Cabecera titulo={socio ? 'Editar socio' : 'Nuevo socio'} subtitulo={socio?.nombre} atras />
       <Contenido>
         <form onSubmit={guardar} noValidate className="space-y-5">
-          <Grupo titulo="Identificación">
+          <GrupoFormulario titulo="Identificación">
             <Campo etiqueta="Código de socio *" autoComplete="off" inputMode="text" {...campo('codigo')} />
             <Campo etiqueta="Nombre o razón social *" autoComplete="off" autoCapitalize="words" {...campo('nombre')} />
             <Campo
@@ -205,9 +203,9 @@ function FormularioDatos({ socio, socios, inicial }: { socio: Socio | null; soci
               {...campo('nif')}
               ayuda={avisoNif}
             />
-          </Grupo>
+          </GrupoFormulario>
 
-          <Grupo titulo="Contacto">
+          <GrupoFormulario titulo="Contacto">
             <Campo etiqueta="Teléfono" type="tel" inputMode="tel" autoComplete="off" {...campo('telefono')} ayuda={avisoTelefono} />
             <Campo
               etiqueta="Email"
@@ -218,17 +216,17 @@ function FormularioDatos({ socio, socios, inicial }: { socio: Socio | null; soci
               spellCheck={false}
               {...campo('email')}
             />
-          </Grupo>
+          </GrupoFormulario>
 
-          <Grupo titulo="Dirección">
+          <GrupoFormulario titulo="Dirección">
             <Campo etiqueta="Calle y número" autoComplete="off" {...campo('direccion')} />
             <div className="grid grid-cols-[7rem_1fr] gap-3">
               <Campo etiqueta="C. postal" inputMode="numeric" maxLength={5} autoComplete="off" {...campo('codigo_postal')} />
               <Campo etiqueta="Localidad" autoComplete="off" {...campo('localidad')} />
             </div>
-          </Grupo>
+          </GrupoFormulario>
 
-          <Grupo titulo="Situación en la OP">
+          <GrupoFormulario titulo="Situación en la OP">
             <Campo etiqueta="Fecha de alta" type="date" {...campo('fecha_alta')} />
             <div>
               <p className="mb-1.5 text-sm font-medium text-stone-700">Estado</p>
@@ -243,34 +241,26 @@ function FormularioDatos({ socio, socios, inicial }: { socio: Socio | null; soci
               />
             </div>
             {datos.estado === 'baja' && <Campo etiqueta="Fecha de baja" type="date" {...campo('fecha_baja')} />}
-          </Grupo>
+          </GrupoFormulario>
 
-          <Grupo titulo="Observaciones">
+          <GrupoFormulario titulo="Observaciones">
             <AreaTexto
               etiqueta="Notas sobre el socio"
               value={datos.observaciones}
               onChange={(e) => cambiar('observaciones', e.target.value)}
             />
-          </Grupo>
+          </GrupoFormulario>
 
-          {errorGeneral && <Aviso tipo="error">{errorGeneral}</Aviso>}
+          {hayErrores && <Aviso tipo="error">Revisa los campos marcados en rojo.</Aviso>}
+          {errorGuardado && <Aviso tipo="error">{errorGuardado}</Aviso>}
 
-          <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] -mx-4 bg-gradient-to-t from-fondo via-fondo to-fondo/0 px-4 pt-4 pb-3 lg:bottom-0">
+          <BarraGuardar>
             <Boton type="submit" icono={Save} cargando={guardando} bloque>
               {socio ? 'Guardar cambios' : 'Dar de alta'}
             </Boton>
-          </div>
+          </BarraGuardar>
         </form>
       </Contenido>
     </>
-  )
-}
-
-function Grupo({ titulo, children }: { titulo: string; children: ReactNode }) {
-  return (
-    <fieldset>
-      <legend className="mb-2 px-1 text-sm font-semibold tracking-wide text-stone-500 uppercase">{titulo}</legend>
-      <Tarjeta className="space-y-4 p-4">{children}</Tarjeta>
-    </fieldset>
   )
 }

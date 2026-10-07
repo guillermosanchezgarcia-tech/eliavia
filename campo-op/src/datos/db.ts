@@ -32,6 +32,22 @@ export interface Pendiente {
   error: string | null
 }
 
+/**
+ * Archivo de una foto guardado en el móvil: las que se hacen aquí (hasta que
+ * se suben a Supabase) y las ya vistas (para poder verlas sin conexión).
+ */
+export interface Archivo {
+  /** El mismo id que la foto. */
+  id: string
+  finca_id: string
+  ruta: string
+  blob: Blob
+  /** 1 = ya está en Supabase; 0 = falta subirla. (IndexedDB no indexa true/false.) */
+  subido: 0 | 1
+  error: string | null
+  creado: string
+}
+
 export interface Ajuste {
   clave: string
   valor: unknown
@@ -45,6 +61,7 @@ export const db = new Dexie('campo-op') as Dexie & {
   perfiles: EntityTable<Perfil, 'id'>
   pendientes: EntityTable<Pendiente, 'num'>
   ajustes: EntityTable<Ajuste, 'clave'>
+  archivos: EntityTable<Archivo, 'id'>
 }
 
 // Solo se declaran los campos por los que se busca; el resto se guarda igual.
@@ -56,6 +73,11 @@ db.version(1).stores({
   perfiles: 'id',
   pendientes: '++num, tabla, [tabla+fila_id]',
   ajustes: 'clave',
+})
+
+// Versión 2 (parte 3): archivos de las fotos.
+db.version(2).stores({
+  archivos: 'id, finca_id, subido',
 })
 
 /** Campos que se pueden enviar a Supabase. El resto (fechas de creación,
@@ -87,8 +109,10 @@ export async function guardarAjuste(clave: string, valor: unknown) {
 
 /** Borra todos los datos guardados en el móvil (al cerrar sesión). */
 export async function vaciarDatosLocales() {
-  await db.transaction('rw', [db.socios, db.fincas, db.recintos, db.fotos, db.perfiles, db.pendientes, db.ajustes], async () => {
+  const tablas = [db.socios, db.fincas, db.recintos, db.fotos, db.perfiles, db.pendientes, db.ajustes, db.archivos]
+  await db.transaction('rw', tablas, async () => {
     await Promise.all([
+      db.archivos.clear(),
       db.socios.clear(),
       db.fincas.clear(),
       db.recintos.clear(),

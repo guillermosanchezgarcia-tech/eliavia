@@ -22,9 +22,8 @@ function iguales(a: unknown, b: unknown) {
   return JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
 }
 
-/** Crea un registro nuevo y devuelve su identificador. */
-export async function crear<T extends Tabla>(tabla: T, datos: Datos<T>): Promise<string> {
-  const id = crypto.randomUUID()
+/** Crea un registro nuevo y devuelve su identificador (se puede dar uno ya hecho). */
+export async function crear<T extends Tabla>(tabla: T, datos: Datos<T>, id: string = crypto.randomUUID()): Promise<string> {
   const ahora = new Date().toISOString()
   const fila = {
     ...datos,

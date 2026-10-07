@@ -11,10 +11,13 @@ import { sincronizar } from './sincronizacion'
 export async function descartarCambios(p: Pendiente): Promise<string | null> {
   const { data, error } = await supabase.from(p.tabla).select('*').eq('id', p.fila_id).maybeSingle()
   if (error) return mensajeDeError(error)
-  await db.transaction('rw', db.table(p.tabla), db.pendientes, async () => {
+  await db.transaction('rw', db.table(p.tabla), db.pendientes, db.archivos, async () => {
     await db.pendientes.where('[tabla+fila_id]').equals([p.tabla, p.fila_id]).delete()
     if (data && !data.eliminado) await db.table(p.tabla).put(data)
-    else await db.table(p.tabla).delete(p.fila_id)
+    else {
+      await db.table(p.tabla).delete(p.fila_id)
+      if (p.tabla === 'fotos') await db.archivos.delete(p.fila_id)
+    }
   })
   void sincronizar()
   return null
@@ -23,5 +26,6 @@ export async function descartarCambios(p: Pendiente): Promise<string | null> {
 /** Vuelve a intentar enviar un cambio que dio error (p. ej. tras corregir el dato). */
 export async function reintentar(p: Pendiente) {
   await db.pendientes.update(p.num!, { error: null })
+  if (p.tabla === 'fotos') await db.archivos.update(p.fila_id, { error: null })
   await sincronizar()
 }

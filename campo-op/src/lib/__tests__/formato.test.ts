@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coincide, comparar, formatearFecha, formatearHa, formatearM2, haceCuanto, iniciales, normalizar } from '../formato'
+import { coincide, comparar, formatearFecha, formatearHa, formatearM2, haceCuanto, haceDias, iniciales, normalizar } from '../formato'
 
 describe('formato', () => {
   it('busca sin tildes ni mayúsculas y en cualquier orden', () => {
@@ -27,5 +27,15 @@ describe('formato', () => {
     expect(iniciales('Agrícola Pérez SL')).toBe('AP')
     expect(iniciales('José de la Torre')).toBe('JT')
     expect(['10', '2', '1'].sort(comparar)).toEqual(['1', '2', '10'])
+  })
+
+  it('cuenta los días desde una visita', () => {
+    const hoy = '2026-10-07'
+    expect(haceDias('2026-10-07', hoy)).toBe('hoy')
+    expect(haceDias('2026-10-06', hoy)).toBe('ayer')
+    expect(haceDias('2026-09-25', hoy)).toBe('hace 12 días')
+    expect(haceDias('2026-05-07', hoy)).toBe('hace 5 meses')
+    expect(haceDias('2024-01-01', hoy)).toBe('hace 3 años')
+    expect(haceDias(null, hoy)).toBe('')
   })
 })

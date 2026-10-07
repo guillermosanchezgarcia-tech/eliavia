@@ -1,5 +1,6 @@
 // Motor de sincronización entre el móvil y Supabase.
 //
+//   0. SUBIR FOTOS: las fotos hechas en el móvil se suben a Supabase Storage.
 //   1. ENVIAR: recorre la lista de «pendientes» en orden y la manda a Supabase.
 //      · Si no hay conexión, para y lo reintenta más tarde (no se pierde nada).
 //      · Si Supabase rechaza un cambio (p. ej. código de socio repetido), lo
@@ -130,6 +131,7 @@ async function vuelta() {
   if (!navigator.onLine) return
   cambiarEstado({ sincronizando: true })
   try {
+    await subirArchivos()
     await enviarPendientes()
     await descargarPerfiles()
     for (const tabla of TABLAS) await descargarTabla(tabla)
@@ -153,6 +155,31 @@ export function programarSincronizacion(retraso = 1500) {
 }
 
 // ---------------------------------------------------------------------------
+// 0. Subir las fotos hechas en el móvil
+// ---------------------------------------------------------------------------
+
+export const BUCKET_FOTOS = 'fotos'
+
+async function subirArchivos() {
+  const lista = await db.archivos.where('subido').equals(0).toArray()
+  for (const a of lista) {
+    if (a.error) continue
+    const { error } = await supabase.storage
+      .from(BUCKET_FOTOS)
+      .upload(a.ruta, a.blob, { contentType: a.blob.type || 'image/jpeg', upsert: false })
+    // «Ya existe»: la subida anterior llegó aunque se perdiera la respuesta.
+    const yaEstaba = error && 'statusCode' in error && String(error.statusCode) === '409'
+    if (!error || yaEstaba) {
+      await db.archivos.update(a.id, { subido: 1, error: null })
+      continue
+    }
+    const status = 'status' in error && typeof error.status === 'number' ? error.status : 0
+    if (esPasajero({ error, status })) lanzar({ error, status })
+    await db.archivos.update(a.id, { error: `No se ha podido subir la foto: ${mensajeDeError(error)}` })
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 1. Enviar los cambios pendientes
 // ---------------------------------------------------------------------------
 
@@ -167,6 +194,15 @@ async function enviarPendientes() {
     if (p.error || bloqueados.has(clave)) {
       bloqueados.add(clave)
       continue
+    }
+    // Una foto no se da de alta hasta que su archivo está subido.
+    if (p.tabla === 'fotos' && p.operacion === 'crear') {
+      const archivo = await db.archivos.get(p.fila_id)
+      if (archivo && !archivo.subido) {
+        if (archivo.error) await db.pendientes.update(p.num!, { error: archivo.error })
+        bloqueados.add(clave)
+        continue
+      }
     }
     const respuesta = await enviar(p)
     if (!respuesta.error) {

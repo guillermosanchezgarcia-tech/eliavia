@@ -2,6 +2,7 @@
 // Todas tienen un tamaño mínimo de 48 px para poder pulsarlas con el pulgar.
 
 import {
+  Check,
   CircleCheck,
   Info,
   LoaderCircle,
@@ -14,6 +15,7 @@ import {
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
+  type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
 import { Link } from 'react-router'
@@ -307,7 +309,7 @@ export function Dialogo({ abierto, titulo, children, acciones, alCerrar }: {
         role="dialog"
         aria-modal="true"
         aria-labelledby={idTitulo}
-        className="pb-seguro relative w-full max-w-md rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl sm:pb-5"
+        className="pb-seguro relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 shadow-xl sm:rounded-3xl sm:pb-5"
       >
         <h2 id={idTitulo} className="text-lg font-bold text-stone-900">
           {titulo}
@@ -333,5 +335,83 @@ export function EnlaceBoton({ a, variante = 'primario', icono: Icono, bloque = f
       {Icono && <Icono className="size-5" aria-hidden />}
       {children}
     </Link>
+  )
+}
+
+interface PropsSeleccion extends SelectHTMLAttributes<HTMLSelectElement> {
+  etiqueta: string
+  ayuda?: ReactNode
+  error?: string | null
+  opciones: { valor: string; texto: string }[]
+  /** Texto de la opción vacía; sin él no hay opción vacía. */
+  vacia?: string
+}
+
+/** Desplegable nativo (en el móvil abre el selector del sistema, cómodo con el pulgar). */
+export function Seleccion({ etiqueta, ayuda, error, opciones, vacia, className, id, ...props }: PropsSeleccion) {
+  const idAuto = useId()
+  const idCampo = id ?? idAuto
+  return (
+    <div className={className}>
+      <label htmlFor={idCampo} className="mb-1.5 block text-sm font-medium text-stone-700">
+        {etiqueta}
+      </label>
+      <select
+        id={idCampo}
+        aria-invalid={error ? true : undefined}
+        className={cx(
+          'block min-h-12 w-full rounded-xl border bg-white px-3 text-stone-900 focus:border-marca-600 focus:ring-2 focus:ring-marca-600/20 focus:outline-none',
+          error ? 'border-red-400' : 'border-stone-300',
+        )}
+        {...props}
+      >
+        {vacia !== undefined && <option value="">{vacia}</option>}
+        {opciones.map((o) => (
+          <option key={o.valor} value={o.valor}>
+            {o.texto}
+          </option>
+        ))}
+      </select>
+      {(error || ayuda) && <p className={cx('mt-1.5 text-sm', error ? 'text-red-700' : 'text-stone-500')}>{error || ayuda}</p>}
+    </div>
+  )
+}
+
+/** Botón que se marca y desmarca (varias a la vez, p. ej. las certificaciones). */
+export function Etiqueta({ marcada, onClick, children }: { marcada: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={marcada}
+      onClick={onClick}
+      className={cx(
+        'inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-medium ring-1 transition',
+        marcada ? 'bg-marca-700 text-white ring-marca-700' : 'bg-white text-stone-700 ring-stone-300 hover:bg-stone-50',
+      )}
+    >
+      {marcada && <Check className="size-4" aria-hidden />}
+      {children}
+    </button>
+  )
+}
+
+/** Bloque de un formulario con su título: «Identificación», «Contacto»… */
+export function GrupoFormulario({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return (
+    // «min-w-0»: por defecto un fieldset se ensancha hasta el contenido más ancho y desborda la pantalla.
+    <fieldset className="min-w-0">
+      <legend className="mb-2 px-1 text-sm font-semibold tracking-wide text-stone-500 uppercase">{titulo}</legend>
+      <Tarjeta className="space-y-4 p-4">{children}</Tarjeta>
+    </fieldset>
+  )
+}
+
+/** Barra con el botón de guardar, siempre a la vista al final del formulario. */
+export function BarraGuardar({ children }: { children: ReactNode }) {
+  return (
+    <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] -mx-4 bg-gradient-to-t from-fondo via-fondo to-fondo/0 px-4 pt-4 pb-3 lg:bottom-0">
+      {children}
+    </div>
   )
 }

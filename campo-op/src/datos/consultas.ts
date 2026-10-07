@@ -39,3 +39,30 @@ export function usePendientes() {
 export function useAjuste<T>(clave: string) {
   return useLiveQuery(async () => ((await db.ajustes.get(clave))?.valor as T | undefined) ?? null, [clave])
 }
+
+export function useFinca(id: string | undefined) {
+  return useLiveQuery(async () => (id ? ((await db.fincas.get(id)) ?? null) : null), [id])
+}
+
+export function useRecintos() {
+  return useLiveQuery(() => db.recintos.toArray(), [])
+}
+
+export function useRecintosDeFinca(idFinca: string | undefined) {
+  return useLiveQuery(
+    () => (idFinca ? db.recintos.where('finca_id').equals(idFinca).sortBy('poligono') : []),
+    [idFinca],
+  )
+}
+
+export function useFotosDeFinca(idFinca: string | undefined) {
+  return useLiveQuery(
+    () => (idFinca ? db.fotos.where('finca_id').equals(idFinca).sortBy('created_at') : []),
+    [idFinca],
+  )
+}
+
+/** Cambios sin enviar de un registro (para avisar en su ficha). */
+export function useSinEnviar(tabla: string, id: string) {
+  return useLiveQuery(() => db.pendientes.where('[tabla+fila_id]').equals([tabla, id]).count(), [tabla, id])
+}

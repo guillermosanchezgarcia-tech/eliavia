@@ -1,11 +1,12 @@
 import { ArrowDownUp, CloudOff, Search, SearchX, UserPlus, Users, X } from 'lucide-react'
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { usePerfil } from '../../auth/contexto'
 import { Cabecera, Contenido } from '../../components/Layout'
 import { BotonFlotante, Cargando, EnlaceBoton, Insignia, Opciones, Tarjeta, Vacio } from '../../components/ui'
 import { useAjuste, useFincas, useSocios } from '../../datos/consultas'
 import { CLAVE_ULTIMA_SINCRONIZACION } from '../../datos/sincronizacion'
+import { useCargaProgresiva } from '../../hooks/useCargaProgresiva'
 import { useConexion } from '../../hooks/useConexion'
 import { cx } from '../../lib/cx'
 import { coincide, comparar, formatearHa, iniciales } from '../../lib/formato'
@@ -13,9 +14,6 @@ import type { Socio } from '../../lib/tipos'
 
 type FiltroEstado = 'activo' | 'baja' | 'todos'
 type Orden = 'nombre' | 'codigo'
-
-/** Cuántos socios se pintan de golpe; al bajar se van mostrando más. */
-const POR_TANDA = 60
 
 export function ListaSocios() {
   const perfil = usePerfil()
@@ -74,27 +72,7 @@ export function ListaSocios() {
     )
   }, [socios, estado, busqueda, orden])
 
-  const [visibles, setVisibles] = useState(POR_TANDA)
-  const [claveLista, setClaveLista] = useState(`${busqueda}|${estado}|${orden}`)
-  if (claveLista !== `${busqueda}|${estado}|${orden}`) {
-    // Al cambiar la búsqueda se vuelve a empezar por arriba.
-    setClaveLista(`${busqueda}|${estado}|${orden}`)
-    setVisibles(POR_TANDA)
-  }
-  // Marca invisible al final de la lista: cuando se acerca a la pantalla se
-  // pintan más socios. Se vuelve a crear en cada tanda para que, si sigue a la
-  // vista (pantallas grandes), se pidan más enseguida.
-  const centinela = useCallback((el: HTMLDivElement | null) => {
-    if (!el) return
-    const observador = new IntersectionObserver(
-      (entradas) => {
-        if (entradas.some((e) => e.isIntersecting)) setVisibles((v) => v + POR_TANDA)
-      },
-      { rootMargin: '600px 0px' },
-    )
-    observador.observe(el)
-    return () => observador.disconnect()
-  }, [])
+  const { visibles, centinela } = useCargaProgresiva(`${busqueda}|${estado}|${orden}`)
 
   const esAdmin = perfil.rol === 'admin'
   const cargando = socios === undefined || ultimaSincronizacion === undefined

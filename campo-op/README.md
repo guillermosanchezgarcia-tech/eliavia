@@ -38,14 +38,17 @@ Los mapas y las referencias SIGPAC salen de servicios **públicos y gratuitos** 
 - [x] **Parte 2 · Socios**: listado con buscador, ficha del socio, alta, edición, baja y
   eliminación. Incluye ya la **base del modo sin conexión**: todo se guarda primero en el
   móvil y se sincroniza solo con Supabase (ver «Cómo funciona sin conexión»).
-- [ ] **Parte 3 · Fincas**: ficha completa, varios recintos SIGPAC, tipo de invernadero,
-  superficie en ha y m², cultivo, campaña, certificaciones, fotos y última visita.
-- [ ] **Parte 4 · Sin conexión, remate**: fotos sin cobertura, guardar zonas del mapa para
-  usarlas sin red y pruebas en el campo con móviles reales.
+- [x] **Parte 3 · Fincas**: listado con buscador y filtros (socio, municipio, cultivo, tipo
+  y certificación), ficha completa, varios recintos SIGPAC con su contorno (por referencia
+  o desde la posición del GPS), tipo de invernadero, superficie en ha y m², cultivo,
+  campaña, certificaciones, punto GPS con «Cómo llegar», fotos (también sin cobertura) y
+  fecha de la última visita.
+- [ ] **Parte 4 · Sin conexión, remate**: guardar zonas del mapa para usarlas sin red y
+  pruebas en el campo con móviles reales.
 - [ ] **Parte 5 · Mapa**: ortofoto PNOA + capa SIGPAC, contornos de las fincas, buscar
   parcela, «¿dónde estoy?» con su referencia SIGPAC y botón «Cómo llegar».
-- [ ] **Parte 6 · Informes**: filtros por socio, municipio, cultivo, tipo y certificación;
-  totales por cultivo; exportar a Excel.
+- [ ] **Parte 6 · Informes**: totales por cultivo, municipio y certificación, y exportar a
+  Excel los listados (los filtros ya están en el listado de fincas desde la parte 3).
 - [ ] **Parte 7 · Remate**: alta de técnicos desde la app, correo propio para los emails,
   pruebas en móviles reales y puesta en producción.
 
@@ -186,13 +189,40 @@ En la cabecera siempre se ve el estado: «Sin conexión», «3 sin enviar», «S
 Al **cerrar sesión** se borran los datos del móvil. Si quedan cambios sin enviar, la app
 avisa antes.
 
+### Fotos
+
+- Las fotos se **reducen** a 1.600 píxeles de lado al hacerlas (de 4-8 MB a unos 200-400 KB)
+  y se guardan en el móvil al instante.
+- Se **suben** a Supabase en cuanto hay conexión; hasta entonces llevan un icono naranja de
+  «pendiente de subir». Si el servidor rechaza una subida, aparece en **Más → Sincronización**
+  para reintentarla.
+- Las fotos de otros compañeros se descargan **al abrir la finca** y quedan guardadas, así que
+  las que ya has visto se siguen viendo sin cobertura.
+- Al eliminar una foto desaparece de la ficha, pero el archivo se conserva en Supabase
+  (Storage → `fotos`) por si hay que recuperarla.
+
+## Recintos SIGPAC
+
+Los recintos se consultan al servicio público del SIGPAC (FEGA), que **necesita conexión**:
+
+- **Por referencia**: provincia, municipio, polígono y parcela. Si no se indica el recinto, la
+  app enseña todos los de la parcela para marcar los de la finca.
+- **Desde mi posición**: usa el GPS y busca el recinto en el que estás.
+
+De cada recinto se guardan la superficie, el uso SIGPAC (p. ej. «IV · Invernaderos») y el
+**contorno**, que servirá para dibujarlo en el mapa (parte 5). Si la finca no tenía
+superficie ni municipio, se rellenan con los del primer recinto.
+
+El servicio del SIGPAC a veces corta la conexión: la app reintenta sola tres veces antes de
+avisar.
+
 ---
 
 ## Costes
 
 | Servicio | Plan gratuito | Cuándo pasar a pago |
 |---|---|---|
-| **Supabase** | 0 €: 500 MB de datos y 1 GB de fotos. El proyecto se **pausa si pasa una semana sin uso** (se reactiva con un clic). | En producción se recomienda el plan **Pro (25 $/mes)**: copias de seguridad diarias y sin pausas. |
+| **Supabase** | 0 €: 500 MB de datos y 1 GB de fotos (unas 3.000-4.000 fotos reducidas). El proyecto se **pausa si pasa una semana sin uso** (se reactiva con un clic). | En producción se recomienda el plan **Pro (25 $/mes)**: copias de seguridad diarias y sin pausas. |
 | **Netlify** | 0 € para una app de este tamaño (uso comercial permitido). | No debería hacer falta. |
 | **Mapas PNOA y SIGPAC** | Gratuitos (servicios públicos). | — |
 

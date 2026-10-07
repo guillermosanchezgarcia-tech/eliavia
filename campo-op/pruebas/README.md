@@ -4,7 +4,8 @@
 |---|---|---|
 | Unitarias (Vitest) | Validación de NIF/NIE/CIF, teléfonos, fechas, superficies… | `npm test` |
 | Base de datos (PGlite) | El esquema SQL y los permisos de cada rol, en un PostgreSQL en memoria | `npm run prueba:bd` |
-| Extremo a extremo | La app completa en un navegador contra un Supabase real en Docker | ver abajo |
+| Extremo a extremo: socios | Altas, validación, sin conexión, conflictos, permisos, 2.500 socios | `node pruebas/e2e-socios.mjs` (ver abajo) |
+| Extremo a extremo: fincas | Fincas con recintos SIGPAC, GPS, fotos (también sin conexión y rechazadas), filtros, borrado en cascada | `node pruebas/e2e-fincas.mjs` (ver abajo) |
 
 ## Prueba de extremo a extremo
 
@@ -26,8 +27,17 @@ VITE_SUPABASE_URL=http://127.0.0.1:54321 \
 VITE_SUPABASE_PUBLISHABLE_KEY=$(npx supabase status -o env | grep '^PUBLISHABLE_KEY=' | cut -d'"' -f2) \
 npm run build && npx vite preview --port 4173 &
 
-# 4. Lanzar la prueba (las capturas quedan en pruebas/capturas)
+# 4. Lanzar las pruebas (las capturas quedan en pruebas/capturas)
 node pruebas/e2e-socios.mjs
+bash pruebas/preparar-supabase-local.sh     # empezar de cero
+node pruebas/e2e-fincas.mjs
 ```
 
-Antes de repetirla hay que volver a ejecutar el paso 2 para empezar con la base de datos vacía.
+Antes de repetir una prueba hay que volver a ejecutar el paso 2 para empezar con la base de datos vacía.
+
+La prueba de fincas **simula el SIGPAC** con respuestas reales grabadas en
+`pruebas/fixtures/sigpac/`, para que no dependa de que el servicio público esté disponible.
+Con `SIGPAC_REAL=1` usa el servicio de verdad (puede fallar si el FEGA no responde).
+
+Variables útiles: `APP_URL` (por defecto `http://localhost:4173`), `DB_CONTAINER` (el contenedor
+de la base de datos de Supabase local) y `PLAYWRIGHT_MODULE` (ruta a Playwright si no está en el proyecto).

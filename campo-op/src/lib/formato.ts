@@ -89,3 +89,33 @@ export function iniciales(nombre: string): string {
 
 /** Ordena textos como lo haría una persona: «2» antes que «10», sin tildes. */
 export const comparar = new Intl.Collator('es', { numeric: true, sensitivity: 'base' }).compare
+
+/** Lee un número escrito a la española: «1.234,5» o «1234,5» o «1234.5». Devuelve null si no es un número. */
+export function parsearNumero(texto: string): number | null {
+  const limpio = texto.trim().replace(/\s/g, '')
+  if (!limpio) return null
+  // Con coma decimal, los puntos son separadores de miles; sin coma, un punto es decimal.
+  const normal = limpio.includes(',') ? limpio.replace(/\./g, '').replace(',', '.') : limpio
+  if (!/^-?\d+(\.\d+)?$/.test(normal)) return null
+  const n = Number(normal)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Número para escribir en un campo: 1.2345 → «1,2345» (sin separador de miles). */
+export function numeroParaCampo(n: number | null | undefined, decimales = 4): string {
+  if (n === null || n === undefined) return ''
+  return String(Number(n.toFixed(decimales))).replace('.', ',')
+}
+
+export const HA_A_M2 = 10000
+
+/** «hoy», «ayer», «hace 12 días», «hace 3 meses» a partir de una fecha «AAAA-MM-DD». */
+export function haceDias(fecha: string | null | undefined, referencia = hoy()): string {
+  if (!fecha) return ''
+  const dias = Math.round((Date.parse(referencia) - Date.parse(fecha.slice(0, 10))) / 86400000)
+  if (dias <= 0) return dias === 0 ? 'hoy' : 'en el futuro'
+  if (dias === 1) return 'ayer'
+  if (dias < 60) return `hace ${dias} días`
+  if (dias < 730) return `hace ${Math.round(dias / 30)} meses`
+  return `hace ${Math.round(dias / 365)} años`
+}
