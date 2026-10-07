@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+
+/*
+  Colores de la app. «marca» es el color principal: si la OP tiene un color
+  corporativo, basta con cambiar estos valores y toda la app se adapta.
+*/
+@theme {
+  --color-marca-50: #f0fdf4;
+  --color-marca-100: #dcfce7;
+  --color-marca-200: #bbf7d0;
+  --color-marca-300: #86efac;
+  --color-marca-400: #4ade80;
+  --color-marca-500: #22c55e;
+  --color-marca-600: #16a34a;
+  --color-marca-700: #15803d;
+  --color-marca-800: #166534;
+  --color-marca-900: #14532d;
+
+  --color-fondo: #f6f7f4;
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-fondo text-stone-900 antialiased;
+    min-height: 100dvh;
+  }
+
+  /* Evita que iOS haga zoom al tocar un campo (necesita 16px como mínimo). */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-marca-600;
+  }
+}
+
+@utility pb-seguro {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-seguro {
+  padding-top: env(safe-area-inset-top);
+}
