@@ -14,7 +14,7 @@
 // guardar algo y cada pocos minutos mientras la app está abierta.
 
 import { useSyncExternalStore } from 'react'
-import { esErrorDeConexion, mensajeDeError } from '../lib/errores'
+import { esErrorDeConexion, mensajeDeError, mensajeDeErrorSubida } from '../lib/errores'
 import { supabase } from '../lib/supabase'
 import type { Perfil } from '../lib/tipos'
 import { db, guardarAjuste, leerAjuste, TABLAS, type Pendiente, type Tabla } from './db'
@@ -175,7 +175,7 @@ async function subirArchivos() {
     }
     const status = 'status' in error && typeof error.status === 'number' ? error.status : 0
     if (esPasajero({ error, status })) lanzar({ error, status })
-    await db.archivos.update(a.id, { error: `No se ha podido subir la foto: ${mensajeDeError(error)}` })
+    await db.archivos.update(a.id, { error: `No se ha podido subir la foto. ${mensajeDeErrorSubida(error)}` })
   }
 }
 

@@ -35,3 +35,15 @@ export function mensajeDeError(error: unknown): string {
   if (e.code === '23505') return 'Ya existe un registro con ese código.'
   return e.message || 'Ha ocurrido un error inesperado.'
 }
+
+/** Mensaje en español para un error al subir una foto a Supabase Storage. */
+export function mensajeDeErrorSubida(error: unknown): string {
+  if (esErrorDeConexion(error)) return mensajeDeError(error)
+  const e = error as { status?: number; statusCode?: string | number; message?: string }
+  const codigo = Number(e?.statusCode ?? e?.status)
+  if (codigo === 401 || codigo === 403) return 'No tienes permiso para subir fotos. Comprueba que tu cuenta sigue activa y vuelve a intentarlo.'
+  if (codigo === 413) return 'La foto es demasiado grande para el servidor.'
+  if (codigo === 415) return 'El servidor no admite este formato de foto.'
+  if (codigo === 404) return 'No existe el almacén de fotos en Supabase. Ejecuta el archivo supabase/01_esquema.sql.'
+  return 'El servidor no ha aceptado la foto. Inténtalo de nuevo más tarde.'
+}
