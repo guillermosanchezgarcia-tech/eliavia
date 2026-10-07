@@ -105,7 +105,8 @@ siguientes se crean como **técnicos** (puedes cambiarlo luego desde la app).
 1. Entra en <https://www.netlify.com> y regístrate con tu cuenta de GitHub.
 2. Pulsa **Add new project → Import an existing project → GitHub** y elige el repositorio.
 3. En la configuración:
-   - **Branch to deploy**: `main`
+   - **Branch to deploy**: la rama principal del repositorio (ahora mismo se llama
+     `claude/fluxoria-v2-commercial-up25xh`). Los cambios llegan a ella al aprobar cada parte.
    - **Base directory**: `campo-op`
    - El resto (*build command* y *publish directory*) se rellena solo.
 4. En **Environment variables** añade estas tres:
