@@ -10,7 +10,6 @@ import { config } from '../config'
 import { cx } from '../lib/cx'
 import { NOMBRES_ROL } from '../lib/tipos'
 import { MotorSincronizacion } from '../datos/MotorSincronizacion'
-import { AvisoActualizacion } from './AvisoActualizacion'
 import { IndicadorSincronizacion } from './IndicadorSincronizacion'
 import { Logo } from './Logo'
 
@@ -36,7 +35,6 @@ export function Layout() {
         <Outlet />
       </main>
       <BarraInferior />
-      <AvisoActualizacion />
       <MotorSincronizacion />
     </div>
   )

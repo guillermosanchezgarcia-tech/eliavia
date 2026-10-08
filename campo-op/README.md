@@ -75,7 +75,13 @@ Los mapas y las referencias SIGPAC salen de servicios **públicos y gratuitos** 
 2. Pulsa **New query**.
 3. Abre el archivo [`supabase/01_esquema.sql`](supabase/01_esquema.sql), copia **todo** su
    contenido y pégalo.
-4. Pulsa **Run**. Debe aparecer *Success. No rows returned*.
+4. Pulsa **Run**. Debe aparecer *Success. No rows returned*. (Si Supabase avisa de que la
+   consulta «contiene operaciones destructivas», es normal: el archivo reinstala las reglas de
+   seguridad cada vez y no borra datos. Confirma con **Run this query**.)
+5. Para comprobar que todo ha quedado bien, abre una consulta nueva, pega
+   [`supabase/02_comprobacion.sql`](supabase/02_comprobacion.sql) y pulsa **Run**. Deben salir
+   cinco filas (fincas, fotos, perfiles, recintos y socios), todas con `rls_activada = true` y
+   estado **OK**.
 
 > Se puede ejecutar varias veces sin problema. En las próximas partes, si cambia, solo
 > habrá que volver a pegarlo.
@@ -311,6 +317,7 @@ campo-op/
 ├── public/                    Iconos de la app y reglas de publicación (_redirects, _headers)
 ├── supabase/
 │   ├── 01_esquema.sql         La base de datos completa (tablas y reglas de seguridad)
+│   ├── 02_comprobacion.sql    Consulta para comprobar que todas las tablas tienen sus reglas
 │   └── pruebas/               Prueba automática de las reglas de seguridad
 ├── pruebas/                   Prueba de la app completa contra un Supabase local
 └── src/                       El código de la app

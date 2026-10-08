@@ -3,6 +3,7 @@ import { lazy, Suspense, type ReactElement } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { useAuth, usePerfil } from './auth/contexto'
+import { AvisoActualizacion } from './components/AvisoActualizacion'
 import { Cabecera, Contenido, Layout } from './components/Layout'
 import { Cargando, Tarjeta, Vacio } from './components/ui'
 import { configurado } from './config'
@@ -33,6 +34,8 @@ export default function App() {
       <BrowserRouter>
         <Rutas />
       </BrowserRouter>
+      {/* Fuera de las rutas: así la app se guarda en el móvil desde la primera visita, aun sin haber iniciado sesión. */}
+      <AvisoActualizacion />
     </AuthProvider>
   )
 }
