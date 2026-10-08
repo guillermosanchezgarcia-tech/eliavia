@@ -1,4 +1,4 @@
-import { ChevronRight, Download, KeyRound, LogOut, Pencil, RefreshCw, Share, Smartphone, UserCog } from 'lucide-react'
+import { ChartNoAxesColumn, ChevronRight, Download, KeyRound, LogOut, Pencil, RefreshCw, Share, Smartphone, UserCog } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useAuth, usePerfil } from '../../auth/contexto'
 import { Cabecera, Contenido } from '../../components/Layout'
@@ -45,6 +45,16 @@ export function Mas() {
             </div>
           </div>
         </Tarjeta>
+
+        <Seccion titulo="Datos de la OP">
+          <FilaEnlace
+            a="/informes"
+            icono={ChartNoAxesColumn}
+            titulo="Informes y Excel"
+            detalle="Totales por cultivo, municipio y certificación"
+            derecha={<Flecha />}
+          />
+        </Seccion>
 
         <Seccion titulo="Mi cuenta">
           <EditarNombre />

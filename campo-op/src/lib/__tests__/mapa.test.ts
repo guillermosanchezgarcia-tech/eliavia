@@ -77,7 +77,7 @@ describe('fincas en el mapa', () => {
 describe('búsqueda y filtros de la dirección', () => {
   it('lee los criterios', () => {
     const c = criteriosDeParametros(new URLSearchParams('q=perez&cultivo=Tomate&tipo=invernadero&orden=superficie&municipio=4:104'))
-    expect(c).toEqual({ busqueda: 'perez', socio: '', tipo: 'invernadero', cultivo: 'Tomate', municipio: '4:104', certificacion: '', orden: 'superficie' })
+    expect(c).toEqual({ busqueda: 'perez', socio: '', tipo: 'invernadero', cultivo: 'Tomate', municipio: '4:104', certificacion: '', campana: '', soloActivos: false, orden: 'superficie' })
     expect(criteriosDeParametros(new URLSearchParams('orden=raro')).orden).toBe('nombre')
   })
   it('sabe si hay filtros (el orden no cuenta)', () => {

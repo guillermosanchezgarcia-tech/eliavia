@@ -11,6 +11,7 @@ import { Login } from './pages/acceso/Login'
 import { RecuperarClave } from './pages/acceso/RecuperarClave'
 import { ConfiguracionPendiente, CuentaDesactivada, PantallaCargando, PantallaError } from './pages/Estados'
 import { Inicio } from './pages/Inicio'
+import { Informes } from './pages/informes/Informes'
 import { CambiarClave } from './pages/mas/CambiarClave'
 import { Mas } from './pages/mas/Mas'
 import { Sincronizacion } from './pages/mas/Sincronizacion'
@@ -76,6 +77,7 @@ function Rutas() {
             </Suspense>
           }
         />
+        <Route path="informes" element={<Informes />} />
         <Route path="mas" element={<Mas />} />
         <Route path="mas/clave" element={<CambiarClave />} />
         <Route path="mas/sincronizacion" element={<Sincronizacion />} />

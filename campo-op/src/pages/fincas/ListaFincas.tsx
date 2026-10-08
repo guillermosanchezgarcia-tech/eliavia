@@ -1,20 +1,25 @@
-import { CloudOff, Map as MapIcon, Plus, Search, SearchX, SlidersHorizontal, Sprout, X } from 'lucide-react'
+import { CloudOff, FileSpreadsheet, Map as MapIcon, Plus, Search, SearchX, SlidersHorizontal, Sprout, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Cabecera, Contenido } from '../../components/Layout'
-import { BotonFlotante, Boton, Cargando, Dialogo, EnlaceBoton, Insignia, Seleccion, Tarjeta, Vacio } from '../../components/ui'
+import { Aviso, BotonFlotante, Boton, Cargando, Dialogo, EnlaceBoton, Etiqueta, Insignia, Seleccion, Tarjeta, Vacio } from '../../components/ui'
 import { useAjuste, useFincas, useRecintos, useSocios } from '../../datos/consultas'
 import { CLAVE_ULTIMA_SINCRONIZACION } from '../../datos/sincronizacion'
+import { config } from '../../config'
 import { useCargaProgresiva } from '../../hooks/useCargaProgresiva'
 import { useConexion } from '../../hooks/useConexion'
+import { useCriteriosFincas } from '../../hooks/useCriteriosFincas'
+import { useExportarExcel } from '../../hooks/useExportarExcel'
 import { NOMBRES_TIPO_FINCA } from '../../lib/catalogos'
 import { cx } from '../../lib/cx'
-import { construirTextos, descripcionTipo, filtrarFincas, type OrdenFincas } from '../../lib/fincas'
-import { comparar, formatearHa, formatearNumero } from '../../lib/formato'
+import { hojaFincas, nombreDeArchivo } from '../../lib/exportar'
+import { construirTextos, descripcionTipo, filtrarFincas, SIN_VALOR, type OrdenFincas } from '../../lib/fincas'
+import { formatearHa, formatearNumero, hoy } from '../../lib/formato'
+import { etiquetaMunicipio, opcionesDeFiltro, TEXTO_SIN_DATO } from '../../lib/informes'
 import { nombreMunicipio } from '../../lib/sigpac'
 import type { Finca } from '../../lib/tipos'
 
-const FILTROS = ['socio', 'tipo', 'cultivo', 'municipio', 'certificacion'] as const
+const FILTROS = ['socio', 'tipo', 'cultivo', 'municipio', 'certificacion', 'campana'] as const
 type Filtro = (typeof FILTROS)[number]
 
 const NOMBRES_ORDEN: Record<OrdenFincas, string> = {
@@ -33,21 +38,9 @@ export function ListaFincas() {
 
   // Búsqueda y filtros viven en la dirección: al volver atrás se conservan y se pueden compartir.
   const [parametros, setParametros] = useSearchParams()
-  const busqueda = parametros.get('q') ?? ''
-  const orden = (parametros.get('orden') as OrdenFincas | null) ?? 'nombre'
-  const fSocio = parametros.get('socio') ?? ''
-  const fTipo = parametros.get('tipo') ?? ''
-  const fCultivo = parametros.get('cultivo') ?? ''
-  const fMunicipio = parametros.get('municipio') ?? ''
-  const fCertificacion = parametros.get('certificacion') ?? ''
-  const filtros: Record<Filtro, string> = {
-    socio: fSocio,
-    tipo: fTipo,
-    cultivo: fCultivo,
-    municipio: fMunicipio,
-    certificacion: fCertificacion,
-  }
-  const valor = (f: Filtro) => filtros[f]
+  const criterios = useCriteriosFincas()
+  const { busqueda, orden } = criterios
+  const valor = (f: Filtro) => criterios[f]
 
   function cambiar(clave: string, nuevo: string, porDefecto = '') {
     setParametros(
@@ -66,58 +59,38 @@ export function ListaFincas() {
   const textos = useMemo(() => construirTextos(fincas ?? [], recintos ?? [], socios ?? []), [fincas, recintos, socios])
 
   // Valores disponibles para cada filtro, con cuántas fincas tiene cada uno.
-  const opciones = useMemo(() => {
-    const cultivos = new Map<string, number>()
-    const municipios = new Map<string, number>()
-    const certificaciones = new Map<string, number>()
-    for (const f of fincas ?? []) {
-      if (f.cultivo) cultivos.set(f.cultivo, (cultivos.get(f.cultivo) ?? 0) + 1)
-      if (f.municipio !== null) {
-        const clave = `${f.provincia}:${f.municipio}`
-        municipios.set(clave, (municipios.get(clave) ?? 0) + 1)
-      }
-      for (const c of f.certificaciones) certificaciones.set(c, (certificaciones.get(c) ?? 0) + 1)
-    }
-    const ordenar = (m: Map<string, number>, texto: (k: string) => string) =>
-      [...m.entries()].map(([k, n]) => ({ valor: k, texto: `${texto(k)} (${n})` })).sort((a, b) => comparar(a.texto, b.texto))
-    return {
-      cultivos: ordenar(cultivos, (k) => k),
-      municipios: ordenar(municipios, (k) => {
-        const [p, m] = k.split(':').map(Number)
-        return nombreMunicipio(p, m)
-      }),
-      certificaciones: ordenar(certificaciones, (k) => k),
-    }
-  }, [fincas])
+  const opciones = useMemo(
+    () => ({
+      cultivos: opcionesDeFiltro(fincas ?? [], 'cultivo'),
+      municipios: opcionesDeFiltro(fincas ?? [], 'municipio'),
+      certificaciones: opcionesDeFiltro(fincas ?? [], 'certificacion'),
+      campanas: opcionesDeFiltro(fincas ?? [], 'campana'),
+    }),
+    [fincas],
+  )
 
-  const nombresSocio = useMemo(() => new Map((socios ?? []).map((s) => [s.id, s.nombre])), [socios])
   // Filtrar y ordenar unos miles de fincas es instantáneo: no hace falta guardar el resultado.
-  const resultado = filtrarFincas(fincas ?? [], textos, nombresSocio, {
-    busqueda,
-    orden,
-    socio: fSocio,
-    tipo: fTipo,
-    cultivo: fCultivo,
-    municipio: fMunicipio,
-    certificacion: fCertificacion,
-  })
+  const resultado = filtrarFincas(fincas ?? [], textos, sociosPorId, criterios)
 
   const totalHa = resultado.reduce((s, f) => s + (f.superficie_ha ?? 0), 0)
-  const activos = FILTROS.filter((f) => valor(f))
+  const activos = [...FILTROS.filter((f) => valor(f)), ...(criterios.soloActivos ? (['activos'] as const) : [])]
   const { visibles, centinela } = useCargaProgresiva(`${busqueda}|${orden}|${parametros.toString()}`)
+  const { exportar, exportando, error: errorExcel, cerrarError } = useExportarExcel()
 
   const cargando = fincas === undefined || socios === undefined || ultimaSincronizacion === undefined
   const nuncaSincronizado = ultimaSincronizacion === null
 
-  function etiquetaFiltro(f: Filtro): string {
+  function etiquetaFiltro(f: Filtro | 'activos'): string {
+    if (f === 'activos') return 'Solo socios activos'
     const v = valor(f)
+    if (f !== 'socio' && v === SIN_VALOR) return TEXTO_SIN_DATO[f]
     if (f === 'socio') return sociosPorId.get(v)?.nombre ?? 'Socio'
     if (f === 'tipo') return NOMBRES_TIPO_FINCA[v as keyof typeof NOMBRES_TIPO_FINCA] ?? v
     if (f === 'municipio') {
       const [p, m] = v.split(':').map(Number)
-      return nombreMunicipio(p, m)
+      return etiquetaMunicipio(p, m)
     }
-    return v
+    return f === 'campana' ? `Campaña ${v}` : v
   }
 
   return (
@@ -126,9 +99,23 @@ export function ListaFincas() {
         titulo="Fincas"
         subtitulo={fincas ? `${formatearNumero(resultado.length)} ${resultado.length === 1 ? 'finca' : 'fincas'} · ${formatearHa(totalHa)}` : undefined}
         acciones={
-          <EnlaceBoton a={`/mapa${parametros.toString() ? `?${parametros.toString()}` : ''}`} variante="fantasma" icono={MapIcon}>
-            <span className="sr-only sm:not-sr-only">Mapa</span>
-          </EnlaceBoton>
+          <>
+            {fincas && fincas.length > 0 && (
+              <Boton
+                variante="fantasma"
+                icono={FileSpreadsheet}
+                cargando={exportando}
+                onClick={() =>
+                  void exportar(nombreDeArchivo('fincas', config.nombreOP, hoy()), () => [hojaFincas(resultado, socios ?? [])])
+                }
+              >
+                <span className="sr-only sm:not-sr-only">Excel</span>
+              </Boton>
+            )}
+            <EnlaceBoton a={`/mapa${parametros.toString() ? `?${parametros.toString()}` : ''}`} variante="fantasma" icono={MapIcon}>
+              <span className="sr-only sm:not-sr-only">Mapa</span>
+            </EnlaceBoton>
+          </>
         }
       >
         <div className="space-y-3">
@@ -189,6 +176,16 @@ export function ListaFincas() {
       </Cabecera>
 
       <Contenido className="pb-24">
+        {errorExcel && (
+          <div className="mb-3">
+            <Aviso tipo="error" titulo="No se ha podido exportar">
+              {errorExcel}{' '}
+              <button type="button" onClick={cerrarError} className="font-semibold underline">
+                Cerrar
+              </button>
+            </Aviso>
+          </div>
+        )}
         {cargando ? (
           <Cargando />
         ) : fincas.length === 0 ? (
@@ -291,6 +288,16 @@ export function ListaFincas() {
             vacia="Todas"
             opciones={opciones.certificaciones}
           />
+          <Seleccion
+            etiqueta="Campaña"
+            value={valor('campana')}
+            onChange={(e) => cambiar('campana', e.target.value)}
+            vacia="Todas"
+            opciones={opciones.campanas}
+          />
+          <Etiqueta marcada={criterios.soloActivos} onClick={() => cambiar('activos', criterios.soloActivos ? '' : '1')}>
+            Solo fincas de socios activos
+          </Etiqueta>
           {valor('socio') && (
             <p className="flex items-center justify-between gap-2 rounded-xl bg-marca-50 px-3 py-2 text-sm text-marca-900">
               <span className="min-w-0 truncate">Socio: {etiquetaFiltro('socio')}</span>

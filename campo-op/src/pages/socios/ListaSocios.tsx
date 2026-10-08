@@ -1,15 +1,18 @@
-import { ArrowDownUp, CloudOff, Search, SearchX, UserPlus, Users, X } from 'lucide-react'
+import { ArrowDownUp, CloudOff, FileSpreadsheet, Search, SearchX, UserPlus, Users, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { usePerfil } from '../../auth/contexto'
 import { Cabecera, Contenido } from '../../components/Layout'
-import { BotonFlotante, Cargando, EnlaceBoton, Insignia, Opciones, Tarjeta, Vacio } from '../../components/ui'
+import { Aviso, Boton, BotonFlotante, Cargando, EnlaceBoton, Insignia, Opciones, Tarjeta, Vacio } from '../../components/ui'
+import { config } from '../../config'
 import { useAjuste, useFincas, useSocios } from '../../datos/consultas'
 import { CLAVE_ULTIMA_SINCRONIZACION } from '../../datos/sincronizacion'
 import { useCargaProgresiva } from '../../hooks/useCargaProgresiva'
 import { useConexion } from '../../hooks/useConexion'
+import { useExportarExcel } from '../../hooks/useExportarExcel'
 import { cx } from '../../lib/cx'
-import { coincide, comparar, formatearHa, iniciales } from '../../lib/formato'
+import { hojaSocios, nombreDeArchivo } from '../../lib/exportar'
+import { coincide, comparar, formatearHa, hoy, iniciales } from '../../lib/formato'
 import type { Socio } from '../../lib/tipos'
 
 type FiltroEstado = 'activo' | 'baja' | 'todos'
@@ -21,6 +24,7 @@ export function ListaSocios() {
   const socios = useSocios()
   const fincas = useFincas()
   const ultimaSincronizacion = useAjuste<string>(CLAVE_ULTIMA_SINCRONIZACION)
+  const { exportar, exportando, error: errorExcel, cerrarError } = useExportarExcel()
 
   // La búsqueda se guarda en la dirección para que se conserve al volver atrás.
   const [parametros, setParametros] = useSearchParams()
@@ -83,6 +87,21 @@ export function ListaSocios() {
       <Cabecera
         titulo="Socios"
         subtitulo={socios ? `${cuentas.activo} activos · ${cuentas.baja} de baja` : undefined}
+        acciones={
+          // La lista con NIF, teléfonos y correos solo la puede sacar a un archivo la administración.
+          esAdmin && socios && socios.length > 0 ? (
+            <Boton
+              variante="fantasma"
+              icono={FileSpreadsheet}
+              cargando={exportando}
+              onClick={() =>
+                void exportar(nombreDeArchivo('socios', config.nombreOP, hoy()), () => [hojaSocios(resultado, fincas ?? [])])
+              }
+            >
+              <span className="sr-only sm:not-sr-only">Excel</span>
+            </Boton>
+          ) : undefined
+        }
       >
         <div className="space-y-3">
           <div className="relative">
@@ -133,6 +152,16 @@ export function ListaSocios() {
       </Cabecera>
 
       <Contenido className="pb-24">
+        {errorExcel && (
+          <div className="mb-3">
+            <Aviso tipo="error" titulo="No se ha podido exportar">
+              {errorExcel}{' '}
+              <button type="button" onClick={cerrarError} className="font-semibold underline">
+                Cerrar
+              </button>
+            </Aviso>
+          </div>
+        )}
         {cargando ? (
           <Cargando />
         ) : socios.length === 0 ? (

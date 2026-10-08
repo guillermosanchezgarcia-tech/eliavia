@@ -1,4 +1,4 @@
-import { ChevronRight, Crosshair, Map as IconoMapa, Search, Sprout, type LucideIcon } from 'lucide-react'
+import { ChartNoAxesColumn, ChevronRight, Crosshair, Map as IconoMapa, Search, Sprout, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { usePerfil } from '../auth/contexto'
@@ -8,6 +8,7 @@ import { config } from '../config'
 import { useFincas, useSocios } from '../datos/consultas'
 import { useConexion } from '../hooks/useConexion'
 import { formatearNumero } from '../lib/formato'
+import { fincasDelInforme, resumenDe, SIN_FILTROS } from '../lib/informes'
 
 function saludo(hora: number) {
   if (hora < 6) return 'Buenas noches'
@@ -24,7 +25,8 @@ export function Inicio() {
   const nombre = (perfil.nombre || perfil.email).split(' ')[0]
   const socios = useSocios()
   const fincas = useFincas()
-  const totalHa = (fincas ?? []).reduce((suma, f) => suma + (f.superficie_ha ?? 0), 0)
+  // Las mismas cifras que el informe: fincas de los socios que no están de baja.
+  const resumen = fincas && socios ? resumenDe(fincasDelInforme(fincas, socios, SIN_FILTROS)) : null
 
   return (
     <>
@@ -41,9 +43,9 @@ export function Inicio() {
             Resumen de {config.nombreOP}
           </h2>
           <div className="grid grid-cols-3 gap-3">
-            <Cifra valor={socios ? formatearNumero(socios.filter((s) => s.estado === 'activo').length) : '—'} texto="Socios activos" />
-            <Cifra valor={fincas ? formatearNumero(fincas.length) : '—'} texto="Fincas" />
-            <Cifra valor={fincas ? formatearNumero(totalHa, totalHa < 100 ? 1 : 0) : '—'} texto="Hectáreas" />
+            <Cifra valor={socios ? formatearNumero(socios.filter((s) => s.estado === 'activo').length) : '—'} texto="Socios activos" a="/socios" />
+            <Cifra valor={resumen ? formatearNumero(resumen.fincas) : '—'} texto="Fincas" a="/fincas?activos=1" />
+            <Cifra valor={resumen ? formatearNumero(resumen.ha, resumen.ha < 100 ? 1 : 0) : '—'} texto="Hectáreas" a="/informes" />
           </div>
         </section>
 
@@ -56,6 +58,7 @@ export function Inicio() {
             <Acceso a="/fincas" icono={Sprout} titulo="Fincas" texto="Filtrar por cultivo, municipio…" />
             <Acceso a="/mapa" icono={IconoMapa} titulo="Mapa" texto="Ortofoto PNOA y SIGPAC" />
             <Acceso a="/mapa?pos=1" icono={Crosshair} titulo="¿Dónde estoy?" texto="Mi posición y su recinto SIGPAC" />
+            <Acceso a="/informes" icono={ChartNoAxesColumn} titulo="Informes" texto="Totales por cultivo, municipio… y Excel" />
           </div>
         </section>
       </Contenido>
@@ -63,12 +66,19 @@ export function Inicio() {
   )
 }
 
-function Cifra({ valor, texto }: { valor: string; texto: string }) {
-  return (
-    <Tarjeta className="px-3 py-4 text-center">
+function Cifra({ valor, texto, a }: { valor: string; texto: string; a?: string }) {
+  const contenido = (
+    <>
       <p className="text-2xl font-bold text-marca-800 tabular-nums">{valor}</p>
       <p className="mt-0.5 text-xs font-medium text-stone-500">{texto}</p>
-    </Tarjeta>
+    </>
+  )
+  return a ? (
+    <Link to={a} className="block rounded-2xl bg-white px-3 py-4 text-center shadow-sm ring-1 ring-stone-200 transition hover:ring-marca-300 active:scale-[.99]">
+      {contenido}
+    </Link>
+  ) : (
+    <Tarjeta className="px-3 py-4 text-center">{contenido}</Tarjeta>
   )
 }
 

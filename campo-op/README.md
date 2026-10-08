@@ -48,8 +48,9 @@ Los mapas y las referencias SIGPAC salen de servicios **públicos y gratuitos** 
 - [x] **Parte 5 · Mapa**: ortofoto PNOA + capa SIGPAC, contornos de las fincas, buscar
   parcela, «Mi posición» con su referencia SIGPAC, tocar un recinto para consultarlo,
   crear una finca desde un recinto y botón «Cómo llegar» (ver «El mapa»).
-- [ ] **Parte 6 · Informes**: totales por cultivo, municipio y certificación, y exportar a
-  Excel los listados (los filtros ya están en el listado de fincas desde la parte 3).
+- [x] **Parte 6 · Informes**: totales por cultivo, municipio, certificación y tipo de finca
+  (con filtros por campaña, tipo y socios de baja), cada fila lleva a su lista de fincas, y
+  exportación a **Excel (.xlsx)** del informe y de los listados (ver «Informes y Excel»).
 - [ ] **Parte 7 · Remate**: alta de técnicos desde la app, correo propio para los emails,
   pruebas en móviles reales y puesta en producción.
 
@@ -111,8 +112,8 @@ siguientes se crean como **técnicos** (puedes cambiarlo luego desde la app).
 1. Entra en <https://www.netlify.com> y regístrate con tu cuenta de GitHub.
 2. Pulsa **Add new project → Import an existing project → GitHub** y elige el repositorio.
 3. En la configuración:
-   - **Branch to deploy**: la rama principal del repositorio (ahora mismo se llama
-     `claude/fluxoria-v2-commercial-up25xh`). Los cambios llegan a ella al aprobar cada parte.
+   - **Branch to deploy**: la rama donde está la app. Mientras no se apruebe y fusione el
+     *pull request*, es `ccr-d049b388-v927do`; después, la rama principal del repositorio.
    - **Base directory**: `campo-op`
    - El resto (*build command* y *publish directory*) se rellena solo.
 4. En **Environment variables** añade estas tres:
@@ -125,6 +126,11 @@ siguientes se crean como **técnicos** (puedes cambiarlo luego desde la app).
 
 5. Pulsa **Deploy**. En un minuto tendrás una dirección del tipo
    `https://campo-op.netlify.app` (se puede cambiar en *Site configuration → Change site name*).
+
+> **Alternativa sin GitHub (para probar rápido):** si alguien te pasa la carpeta `dist` ya
+> compilada (o un `.zip` con ella), entra en <https://app.netlify.com/drop>, arrástrala
+> y Netlify te da una dirección al momento. Las claves del paso 5 ya van dentro de esa
+> compilación. Sirve igual para el paso 7 y el paso 8.
 
 ### Paso 7 · Decirle a Supabase cuál es la dirección de la app
 
@@ -157,6 +163,8 @@ Necesario para que funcionen los enlaces de «He olvidado mi contraseña».
 | Crear y editar fincas, recintos SIGPAC y fotos | ✅ | ✅ |
 | Quitar recintos o fotos de una finca | ✅ | ✅ |
 | Eliminar socios o fincas | — | ✅ |
+| Ver informes y exportar a Excel el informe y la lista de fincas | ✅ | ✅ |
+| Exportar a Excel la lista de socios (lleva NIF, teléfonos y correos) | — | ✅ |
 | Gestionar usuarios (rol, dar o quitar acceso) | — | ✅ |
 
 Estas reglas están en la propia base de datos (no solo en la app), así que se cumplen
@@ -250,6 +258,38 @@ atribución en el panel de capas.
 
 ---
 
+## Informes y Excel
+
+Se abren desde **Inicio → Informes** o **Más → Informes y Excel**.
+
+- **Resumen**: socios con fincas, número de fincas y hectáreas. Por defecto cuenta solo las
+  fincas de socios **activos** (las mismas cifras que el Inicio); «Incluir socios de baja» las
+  suma todas. También se puede filtrar por **campaña** y por **tipo de finca**.
+- **Totales por** cultivo, municipio, certificación o tipo de finca: fincas, socios y hectáreas de
+  cada uno, con su parte sobre el total. «Tomate», «tomate» y «Tómate» cuentan como el mismo
+  cultivo (se muestra la forma más usada). La fila «Sin…» agrupa las fincas a las que les falta
+  ese dato. Una finca con varias certificaciones cuenta en cada una (las filas de certificación
+  no suman el total, y la app lo avisa).
+- **Pulsar una fila** abre la lista de fincas con esos mismos filtros (cultivo, campaña, solo
+  socios activos…), que se pueden ajustar y también exportar.
+- **Botón Excel** (icono verde de la cabecera):
+  - en **Informes**: un libro con las hojas *Resumen*, *Por cultivo*, *Por municipio*, *Por
+    certificación*, *Por tipo de finca* y *Detalle de fincas* (una fila por finca);
+  - en **Fincas**: la lista tal como la estás viendo (con búsqueda y filtros);
+  - en **Socios** (solo administradores): la lista de socios con sus datos de contacto y las
+    hectáreas que llevan.
+
+  En el móvil el archivo se descarga (o, en iPhone, se abre la hoja de «Compartir» para
+  guardarlo en *Archivos* o enviarlo por correo o WhatsApp). Funciona **sin conexión**, porque
+  los datos están en el móvil.
+
+> **Protección de datos:** la lista de socios incluye NIF, teléfono y correo. Por eso solo la
+> pueden sacar a un archivo los administradores. Los técnicos sí ven esos datos en la ficha de
+> cada socio (así lo pide el trabajo de campo). Si preferís otro criterio, se cambia en
+> `src/pages/socios/ListaSocios.tsx`.
+
+---
+
 ## Costes
 
 | Servicio | Plan gratuito | Cuándo pasar a pago |
@@ -268,7 +308,7 @@ campo-op/
 ├── netlify.toml               Ajustes para publicar en Netlify
 ├── vite.config.ts             Ajustes de la app instalable (nombre, icono, modo sin conexión)
 ├── .env.example               Plantilla de las claves de Supabase
-├── public/                    Iconos de la app
+├── public/                    Iconos de la app y reglas de publicación (_redirects, _headers)
 ├── supabase/
 │   ├── 01_esquema.sql         La base de datos completa (tablas y reglas de seguridad)
 │   └── pruebas/               Prueba automática de las reglas de seguridad
@@ -280,11 +320,11 @@ campo-op/
     ├── config.ts              Lee las claves de Supabase y el nombre de la OP
     ├── auth/                  Inicio de sesión y perfil del usuario
     ├── components/            Piezas reutilizables: botones, campos, menú, cabecera…
-    ├── hooks/                 Utilidades: ¿hay conexión?, ¿se puede instalar?
+    ├── hooks/                 Utilidades: ¿hay conexión?, ¿se puede instalar?, exportar a Excel
     ├── datos/                 Base de datos del móvil y sincronización con Supabase
     ├── mapa/                  Mapa (Leaflet): capas PNOA y SIGPAC, dibujo de las fincas
     ├── lib/                   Conexión con Supabase, tipos, validación de NIF, formatos
-    └── pages/                 Las pantallas: acceso, inicio, socios, fincas, mapa, más…
+    └── pages/                 Las pantallas: acceso, inicio, socios, fincas, mapa, informes, más…
 ```
 
 ### Cambiar el color de la app

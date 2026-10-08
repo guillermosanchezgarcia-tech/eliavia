@@ -4,7 +4,7 @@ import { campanaDe, campanasRecientes } from '../catalogos'
 import { numeroParaCampo, parsearNumero } from '../formato'
 import { centro, redondearGeometria, silueta } from '../geometria'
 import { codigoReferencia, nombreMunicipio, textoReferencia } from '../sigpac'
-import { descripcionTipo, enlaceComoLlegar, filtrarFincas, sumaSuperficies, ubicacionFinca } from '../fincas'
+import { descripcionTipo, enlaceComoLlegar, filtrarFincas, SIN_VALOR, sumaSuperficies, ubicacionFinca } from '../fincas'
 import type { Finca } from '../tipos'
 
 describe('números a la española', () => {
@@ -125,8 +125,11 @@ describe('filtrar fincas', () => {
     [b.id, 'El Cerro Pimiento López Níjar'],
     [c.id, 'Balsa Tomate Pérez El Ejido'],
   ])
-  const socios = new Map([['s1', 'Pérez'], ['s2', 'López']])
-  const base = { busqueda: '', socio: '', tipo: '', cultivo: '', municipio: '', certificacion: '', orden: 'nombre' as const }
+  const socios = new Map<string, { nombre: string; estado: 'activo' | 'baja' }>([
+    ['s1', { nombre: 'Pérez', estado: 'activo' }],
+    ['s2', { nombre: 'López', estado: 'baja' }],
+  ])
+  const base = { busqueda: '', socio: '', tipo: '', cultivo: '', municipio: '', certificacion: '', campana: '', soloActivos: false, orden: 'nombre' as const }
   const nombres = (l: Finca[]) => l.map((f) => f.nombre)
 
   it('ordena por nombre, socio o superficie', () => {
@@ -144,6 +147,25 @@ describe('filtrar fincas', () => {
     expect(nombres(filtrarFincas(todas, textos, socios, { ...base, municipio: '4:66' }))).toEqual(['El Cerro'])
     expect(nombres(filtrarFincas(todas, textos, socios, { ...base, certificacion: 'GlobalG.A.P.' }))).toEqual(['La Loma'])
     expect(nombres(filtrarFincas(todas, textos, socios, { ...base, cultivo: 'Tomate', tipo: 'invernadero' }))).toEqual(['La Loma'])
+  })
+
+  it('filtra sin fijarse en mayúsculas ni tildes', () => {
+    const d = finca({ nombre: 'Dos', socio_id: 's1', cultivo: 'tómate', certificaciones: ['globalg.a.p.'] })
+    const todas = [a, b, c, d]
+    expect(nombres(filtrarFincas(todas, textos, socios, { ...base, cultivo: 'TOMATE' }))).toEqual(['Balsa', 'Dos', 'La Loma'])
+    expect(nombres(filtrarFincas(todas, textos, socios, { ...base, certificacion: 'GlobalG.A.P.' }))).toEqual(['Dos', 'La Loma'])
+  })
+
+  it('filtra por campaña, por «sin dato» y por socios activos', () => {
+    const d = finca({ nombre: 'Dos', socio_id: 's1', campana: '2025/2026' })
+    const todas = [a, b, c, d]
+    expect(nombres(filtrarFincas(todas, textos, socios, { ...base, campana: '2025/2026' }))).toEqual(['Dos'])
+    expect(nombres(filtrarFincas(todas, textos, socios, { ...base, campana: SIN_VALOR }))).toEqual(['Balsa', 'El Cerro', 'La Loma'])
+    expect(nombres(filtrarFincas(todas, textos, socios, { ...base, cultivo: SIN_VALOR }))).toEqual(['Dos'])
+    expect(nombres(filtrarFincas(todas, textos, socios, { ...base, certificacion: SIN_VALOR }))).toEqual(['Balsa', 'Dos', 'El Cerro'])
+    expect(nombres(filtrarFincas(todas, textos, socios, { ...base, tipo: SIN_VALOR }))).toEqual(['Balsa', 'Dos'])
+    // el socio s2 está de baja: su finca «El Cerro» queda fuera
+    expect(nombres(filtrarFincas(todas, textos, socios, { ...base, soloActivos: true }))).toEqual(['Balsa', 'Dos', 'La Loma'])
   })
 
   it('busca sin tildes y por varias palabras', () => {

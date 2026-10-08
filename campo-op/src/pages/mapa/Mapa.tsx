@@ -63,10 +63,10 @@ export function Mapa() {
 
   // ---- Datos que se dibujan --------------------------------------------------
   const textos = useMemo(() => construirTextos(fincas ?? [], recintos ?? [], socios ?? []), [fincas, recintos, socios])
-  const nombresSocio = useMemo(() => new Map((socios ?? []).map((s) => [s.id, s.nombre])), [socios])
+  const sociosPorId = useMemo(() => new Map((socios ?? []).map((s) => [s.id, s])), [socios])
   const filtradas = useMemo(
-    () => (listo ? filtrarFincas(fincas, textos, nombresSocio, criterios) : []),
-    [listo, fincas, textos, nombresSocio, criterios],
+    () => (listo ? filtrarFincas(fincas, textos, sociosPorId, criterios) : []),
+    [listo, fincas, textos, sociosPorId, criterios],
   )
   const datos = useMemo(() => (listo ? prepararFincas(filtradas, recintos, socios) : []), [listo, filtradas, recintos, socios])
   const limitesIniciales = useMemo(() => {

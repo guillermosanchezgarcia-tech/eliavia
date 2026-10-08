@@ -1,0 +1,4 @@
+# Todas las direcciones (/socios, /fincas/123…) las resuelve la propia app.
+# (Este archivo hace lo mismo que netlify.toml, pero también funciona al publicar
+# arrastrando la carpeta «dist» a Netlify Drop, donde netlify.toml no se lee.)
+/*  /index.html  200

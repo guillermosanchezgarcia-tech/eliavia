@@ -2,7 +2,7 @@
 
 import { NOMBRES_TIPO_FINCA, NOMBRES_TIPO_INVERNADERO } from './catalogos'
 import { centro } from './geometria'
-import { coincide, comparar } from './formato'
+import { coincide, comparar, normalizar } from './formato'
 import { nombreMunicipio } from './sigpac'
 import type { Finca, Recinto, Socio } from './tipos'
 
@@ -50,6 +50,9 @@ export function sumaSuperficies(recintos: { superficie_ha: number | null }[]): n
 
 export type OrdenFincas = 'nombre' | 'socio' | 'superficie'
 
+/** Valor de un filtro que significa «las que no tienen ese dato» (sin cultivo, sin municipio…). */
+export const SIN_VALOR = '_sin'
+
 export interface CriteriosFincas {
   busqueda: string
   socio: string
@@ -58,30 +61,42 @@ export interface CriteriosFincas {
   /** «provincia:municipio», p. ej. «4:104». */
   municipio: string
   certificacion: string
+  campana: string
+  /** Solo las fincas de socios que no están de baja. */
+  soloActivos: boolean
   orden: OrdenFincas
+}
+
+/** ¿Este dato de la finca cumple el filtro? Ignora mayúsculas y tildes; `SIN_VALOR` pide los que no lo tienen. */
+function cumple(filtro: string, valor: string | null | undefined): boolean {
+  if (!filtro) return true
+  return filtro === SIN_VALOR ? !normalizar(valor) : normalizar(valor) === normalizar(filtro)
 }
 
 /**
  * Filtra y ordena las fincas.
  * @param textos texto en el que se busca de cada finca (por su id)
- * @param nombresSocio nombre de cada socio (por su id), para ordenar
+ * @param socios nombre y estado de cada socio (por su id), para ordenar y para «solo activos»
  */
 export function filtrarFincas(
   fincas: Finca[],
   textos: Map<string, string>,
-  nombresSocio: Map<string, string>,
+  socios: ReadonlyMap<string, Pick<Socio, 'nombre' | 'estado'>>,
   c: CriteriosFincas,
 ): Finca[] {
   const lista = fincas.filter(
     (f) =>
       (!c.socio || f.socio_id === c.socio) &&
-      (!c.tipo || f.tipo === c.tipo) &&
-      (!c.cultivo || f.cultivo === c.cultivo) &&
-      (!c.municipio || `${f.provincia}:${f.municipio}` === c.municipio) &&
-      (!c.certificacion || f.certificaciones.includes(c.certificacion)) &&
+      (!c.soloActivos || socios.get(f.socio_id)?.estado !== 'baja') &&
+      (!c.tipo || (c.tipo === SIN_VALOR ? !f.tipo : f.tipo === c.tipo)) &&
+      cumple(c.cultivo, f.cultivo) &&
+      cumple(c.campana, f.campana) &&
+      (!c.municipio || (c.municipio === SIN_VALOR ? f.municipio === null : `${f.provincia}:${f.municipio}` === c.municipio)) &&
+      (!c.certificacion ||
+        (c.certificacion === SIN_VALOR ? f.certificaciones.length === 0 : f.certificaciones.some((x) => cumple(c.certificacion, x)))) &&
       (!c.busqueda || coincide(textos.get(f.id) ?? '', c.busqueda)),
   )
-  const socio = (f: Finca) => nombresSocio.get(f.socio_id) ?? ''
+  const socio = (f: Finca) => socios.get(f.socio_id)?.nombre ?? ''
   return lista.sort((a, b) => {
     if (c.orden === 'superficie') return (b.superficie_ha ?? -1) - (a.superficie_ha ?? -1) || comparar(a.nombre, b.nombre)
     if (c.orden === 'socio') return comparar(socio(a), socio(b)) || comparar(a.nombre, b.nombre)
@@ -127,7 +142,7 @@ export function construirTextos(
 }
 
 /** Nombres de los filtros que viajan en la dirección (/fincas?cultivo=Tomate). */
-export const PARAMETROS_FILTRO = ['socio', 'tipo', 'cultivo', 'municipio', 'certificacion'] as const
+export const PARAMETROS_FILTRO = ['socio', 'tipo', 'cultivo', 'municipio', 'certificacion', 'campana', 'activos'] as const
 
 /** Lee la búsqueda y los filtros de la dirección. */
 export function criteriosDeParametros(p: URLSearchParams): CriteriosFincas {
@@ -139,11 +154,13 @@ export function criteriosDeParametros(p: URLSearchParams): CriteriosFincas {
     cultivo: p.get('cultivo') ?? '',
     municipio: p.get('municipio') ?? '',
     certificacion: p.get('certificacion') ?? '',
+    campana: p.get('campana') ?? '',
+    soloActivos: p.get('activos') === '1',
     orden: orden === 'socio' || orden === 'superficie' ? orden : 'nombre',
   }
 }
 
 /** ¿Hay alguna búsqueda o filtro activo? */
 export function hayFiltros(c: CriteriosFincas): boolean {
-  return Boolean(c.busqueda || c.socio || c.tipo || c.cultivo || c.municipio || c.certificacion)
+  return Boolean(c.busqueda || c.socio || c.tipo || c.cultivo || c.municipio || c.certificacion || c.campana || c.soloActivos)
 }

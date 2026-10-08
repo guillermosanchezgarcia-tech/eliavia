@@ -27,3 +27,6 @@ dist-ssr
 supabase/.temp
 supabase/.branches
 pruebas/capturas
+
+# Archivos preparados para entregar (compilaciones con las claves de un proyecto concreto)
+entrega/
