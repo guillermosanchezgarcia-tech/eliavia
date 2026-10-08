@@ -77,3 +77,12 @@ export function silueta(g: Geometry | null | undefined, lado = 100, margen = 6):
     )
     .join('')
 }
+
+/** Coordenadas de un polígono en el orden que usa Leaflet: [latitud, longitud]. */
+export function latLngsDe(g: Geometry | null | undefined): [number, number][][] | [number, number][][][] | null {
+  if (!g) return null
+  const anillo = (r: Position[]) => r.map(([lon, lat]) => [lat, lon] as [number, number])
+  if (g.type === 'Polygon') return g.coordinates.map(anillo)
+  if (g.type === 'MultiPolygon') return g.coordinates.map((p) => p.map(anillo))
+  return null
+}

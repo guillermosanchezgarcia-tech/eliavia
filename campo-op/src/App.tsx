@@ -1,15 +1,14 @@
-import { Map as IconoMapa, SearchX } from 'lucide-react'
-import type { ReactElement } from 'react'
+import { SearchX } from 'lucide-react'
+import { lazy, Suspense, type ReactElement } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
 import { useAuth, usePerfil } from './auth/contexto'
 import { Cabecera, Contenido, Layout } from './components/Layout'
-import { Tarjeta, Vacio } from './components/ui'
+import { Cargando, Tarjeta, Vacio } from './components/ui'
 import { configurado } from './config'
 import { EnlaceNoValido } from './pages/acceso/EnlaceNoValido'
 import { Login } from './pages/acceso/Login'
 import { RecuperarClave } from './pages/acceso/RecuperarClave'
-import { EnConstruccion } from './pages/EnConstruccion'
 import { ConfiguracionPendiente, CuentaDesactivada, PantallaCargando, PantallaError } from './pages/Estados'
 import { Inicio } from './pages/Inicio'
 import { CambiarClave } from './pages/mas/CambiarClave'
@@ -22,6 +21,9 @@ import { ListaFincas } from './pages/fincas/ListaFincas'
 import { FichaSocio } from './pages/socios/FichaSocio'
 import { FormularioSocio } from './pages/socios/FormularioSocio'
 import { ListaSocios } from './pages/socios/ListaSocios'
+
+// El mapa pesa bastante (Leaflet): se descarga solo al abrirlo.
+const Mapa = lazy(() => import('./pages/mapa/Mapa').then((m) => ({ default: m.Mapa })))
 
 export default function App() {
   if (!configurado) return <ConfiguracionPendiente />
@@ -69,17 +71,9 @@ function Rutas() {
         <Route
           path="mapa"
           element={
-            <EnConstruccion
-              titulo="Mapa"
-              icono={IconoMapa}
-              parte={5}
-              puntos={[
-                'Ortofoto PNOA y capa SIGPAC',
-                'Buscar parcela por municipio, polígono y parcela',
-                'Mi posición y su referencia SIGPAC',
-                'Botón «Cómo llegar» con Google Maps',
-              ]}
-            />
+            <Suspense fallback={<Cargando texto="Abriendo el mapa…" />}>
+              <Mapa />
+            </Suspense>
           }
         />
         <Route path="mas" element={<Mas />} />

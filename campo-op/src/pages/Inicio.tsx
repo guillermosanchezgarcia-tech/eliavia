@@ -55,7 +55,7 @@ export function Inicio() {
             <Acceso a="/socios" icono={Search} titulo="Buscar un socio" texto="Por nombre, código o NIF" />
             <Acceso a="/fincas" icono={Sprout} titulo="Fincas" texto="Filtrar por cultivo, municipio…" />
             <Acceso a="/mapa" icono={IconoMapa} titulo="Mapa" texto="Ortofoto PNOA y SIGPAC" />
-            <Acceso a="/mapa" icono={Crosshair} titulo="¿Dónde estoy?" texto="Mi posición y su recinto SIGPAC" />
+            <Acceso a="/mapa?pos=1" icono={Crosshair} titulo="¿Dónde estoy?" texto="Mi posición y su recinto SIGPAC" />
           </div>
         </section>
       </Contenido>

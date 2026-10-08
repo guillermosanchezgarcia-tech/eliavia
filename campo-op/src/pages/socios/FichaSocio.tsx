@@ -1,4 +1,4 @@
-import { CloudUpload, Mail, MapPin, MessageCircle, Pencil, Phone, Plus, Sprout, Trash, UserX } from 'lucide-react'
+import { CloudUpload, Mail, Map as MapIcon, MapPin, MessageCircle, Pencil, Phone, Plus, Sprout, Trash, UserX } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { usePerfil } from '../../auth/contexto'
@@ -150,7 +150,7 @@ function Ficha({ socio }: { socio: Socio }) {
                       className="mt-1 flex items-center gap-1 text-sm font-medium text-marca-800 hover:underline"
                     >
                       <MapPin className="size-4" aria-hidden />
-                      Ver en el mapa
+                      Ver en Google Maps
                     </a>
                   </>
                 )}
@@ -183,9 +183,16 @@ function Ficha({ socio }: { socio: Socio }) {
               </ul>
             )}
           </Tarjeta>
-          <EnlaceBoton a={`/fincas/nueva?socio=${socio.id}`} variante="secundario" icono={Plus} bloque className="mt-3">
-            Añadir finca
-          </EnlaceBoton>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <EnlaceBoton a={`/fincas/nueva?socio=${socio.id}`} variante="secundario" icono={Plus}>
+              Añadir finca
+            </EnlaceBoton>
+            {fincas && fincas.length > 0 && (
+              <EnlaceBoton a={`/mapa?socio=${socio.id}`} variante="secundario" icono={MapIcon}>
+                Ver en el mapa
+              </EnlaceBoton>
+            )}
+          </div>
         </Seccion>
 
         <p className="px-1 text-xs leading-relaxed text-stone-500">

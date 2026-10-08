@@ -1,9 +1,9 @@
-import { CalendarCheck, Navigation, Pencil, Sprout, Trash, UserRound } from 'lucide-react'
+import { CalendarCheck, Map as MapIcon, Navigation, Pencil, Sprout, Trash, UserRound } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { usePerfil } from '../../auth/contexto'
 import { GaleriaFotos } from '../../components/GaleriaFotos'
-import { Silueta } from '../../components/EditorRecintos'
+import { Silueta } from '../../components/Silueta'
 import { Cabecera, Contenido } from '../../components/Layout'
 import { Aviso, Boton, Cargando, Dialogo, EnlaceBoton, Insignia, Tarjeta, Vacio } from '../../components/ui'
 import {
@@ -120,23 +120,28 @@ function Ficha({ finca }: { finca: Finca }) {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-2 gap-2">
             {ubicacion ? (
-              <a
-                href={enlaceComoLlegar(ubicacion)}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-marca-700 px-4 text-base font-semibold text-white shadow-sm hover:bg-marca-800 active:bg-marca-900"
-              >
-                <Navigation className="size-5" aria-hidden />
-                Cómo llegar
-              </a>
+              <>
+                <a
+                  href={enlaceComoLlegar(ubicacion)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-marca-700 px-4 text-base font-semibold text-white shadow-sm hover:bg-marca-800 active:bg-marca-900"
+                >
+                  <Navigation className="size-5" aria-hidden />
+                  Cómo llegar
+                </a>
+                <EnlaceBoton a={`/mapa?finca=${finca.id}`} variante="secundario" icono={MapIcon}>
+                  Ver en el mapa
+                </EnlaceBoton>
+              </>
             ) : (
-              <p className="flex min-h-12 items-center rounded-xl bg-stone-50 px-4 text-sm text-stone-500">
+              <p className="col-span-2 flex min-h-12 items-center rounded-xl bg-stone-50 px-4 text-sm text-stone-500">
                 Sin ubicación: añade un punto GPS o un recinto SIGPAC.
               </p>
             )}
-            <Boton variante="secundario" icono={CalendarCheck} cargando={registrando} disabled={visitadaHoy} onClick={() => void registrarVisita()}>
+            <Boton className="col-span-2" variante="secundario" icono={CalendarCheck} cargando={registrando} disabled={visitadaHoy} onClick={() => void registrarVisita()}>
               {visitadaHoy ? 'Visita de hoy registrada' : 'Registrar visita de hoy'}
             </Boton>
           </div>

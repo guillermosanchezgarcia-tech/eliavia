@@ -1,4 +1,4 @@
-import { CloudOff, Plus, Search, SearchX, SlidersHorizontal, Sprout, X } from 'lucide-react'
+import { CloudOff, Map as MapIcon, Plus, Search, SearchX, SlidersHorizontal, Sprout, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Cabecera, Contenido } from '../../components/Layout'
@@ -9,7 +9,7 @@ import { useCargaProgresiva } from '../../hooks/useCargaProgresiva'
 import { useConexion } from '../../hooks/useConexion'
 import { NOMBRES_TIPO_FINCA } from '../../lib/catalogos'
 import { cx } from '../../lib/cx'
-import { descripcionTipo, filtrarFincas, type OrdenFincas } from '../../lib/fincas'
+import { construirTextos, descripcionTipo, filtrarFincas, type OrdenFincas } from '../../lib/fincas'
 import { comparar, formatearHa, formatearNumero } from '../../lib/formato'
 import { nombreMunicipio } from '../../lib/sigpac'
 import type { Finca } from '../../lib/tipos'
@@ -63,32 +63,7 @@ export function ListaFincas() {
 
   const sociosPorId = useMemo(() => new Map((socios ?? []).map((s) => [s.id, s])), [socios])
 
-  // Texto en el que se busca: finca, socio, municipio, cultivo, certificaciones y referencias SIGPAC.
-  const textos = useMemo(() => {
-    const refs = new Map<string, string>()
-    for (const r of recintos ?? []) refs.set(r.finca_id, `${refs.get(r.finca_id) ?? ''} pol ${r.poligono} parc ${r.parcela} ${r.poligono} ${r.parcela}`)
-    const mapa = new Map<string, string>()
-    for (const f of fincas ?? []) {
-      const socio = sociosPorId.get(f.socio_id)
-      mapa.set(
-        f.id,
-        [
-          f.nombre,
-          f.cultivo,
-          f.campana,
-          socio?.nombre,
-          socio?.codigo,
-          nombreMunicipio(f.provincia, f.municipio),
-          descripcionTipo(f),
-          f.certificaciones.join(' '),
-          refs.get(f.id),
-        ]
-          .filter(Boolean)
-          .join(' '),
-      )
-    }
-    return mapa
-  }, [fincas, recintos, sociosPorId])
+  const textos = useMemo(() => construirTextos(fincas ?? [], recintos ?? [], socios ?? []), [fincas, recintos, socios])
 
   // Valores disponibles para cada filtro, con cuántas fincas tiene cada uno.
   const opciones = useMemo(() => {
@@ -150,6 +125,11 @@ export function ListaFincas() {
       <Cabecera
         titulo="Fincas"
         subtitulo={fincas ? `${formatearNumero(resultado.length)} ${resultado.length === 1 ? 'finca' : 'fincas'} · ${formatearHa(totalHa)}` : undefined}
+        acciones={
+          <EnlaceBoton a={`/mapa${parametros.toString() ? `?${parametros.toString()}` : ''}`} variante="fantasma" icono={MapIcon}>
+            <span className="sr-only sm:not-sr-only">Mapa</span>
+          </EnlaceBoton>
+        }
       >
         <div className="space-y-3">
           <div className="flex gap-2">

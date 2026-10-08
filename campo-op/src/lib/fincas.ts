@@ -3,7 +3,8 @@
 import { NOMBRES_TIPO_FINCA, NOMBRES_TIPO_INVERNADERO } from './catalogos'
 import { centro } from './geometria'
 import { coincide, comparar } from './formato'
-import type { Finca, Recinto } from './tipos'
+import { nombreMunicipio } from './sigpac'
+import type { Finca, Recinto, Socio } from './tipos'
 
 export interface Ubicacion {
   latitud: number
@@ -86,4 +87,63 @@ export function filtrarFincas(
     if (c.orden === 'socio') return comparar(socio(a), socio(b)) || comparar(a.nombre, b.nombre)
     return comparar(a.nombre, b.nombre) || comparar(socio(a), socio(b))
   })
+}
+
+/**
+ * Texto en el que se busca de cada finca: su nombre, cultivo, campaña, socio,
+ * municipio, tipo, certificaciones y las referencias SIGPAC («pol 23 parc 372»).
+ */
+export function construirTextos(
+  fincas: Finca[],
+  recintos: Pick<Recinto, 'finca_id' | 'poligono' | 'parcela'>[],
+  socios: Pick<Socio, 'id' | 'nombre' | 'codigo'>[],
+): Map<string, string> {
+  const porId = new Map(socios.map((s) => [s.id, s]))
+  const referencias = new Map<string, string>()
+  for (const r of recintos) {
+    referencias.set(r.finca_id, `${referencias.get(r.finca_id) ?? ''} pol ${r.poligono} parc ${r.parcela} ${r.poligono} ${r.parcela}`)
+  }
+  const textos = new Map<string, string>()
+  for (const f of fincas) {
+    const socio = porId.get(f.socio_id)
+    textos.set(
+      f.id,
+      [
+        f.nombre,
+        f.cultivo,
+        f.campana,
+        socio?.nombre,
+        socio?.codigo,
+        nombreMunicipio(f.provincia, f.municipio),
+        descripcionTipo(f),
+        f.certificaciones.join(' '),
+        referencias.get(f.id),
+      ]
+        .filter(Boolean)
+        .join(' '),
+    )
+  }
+  return textos
+}
+
+/** Nombres de los filtros que viajan en la dirección (/fincas?cultivo=Tomate). */
+export const PARAMETROS_FILTRO = ['socio', 'tipo', 'cultivo', 'municipio', 'certificacion'] as const
+
+/** Lee la búsqueda y los filtros de la dirección. */
+export function criteriosDeParametros(p: URLSearchParams): CriteriosFincas {
+  const orden = p.get('orden')
+  return {
+    busqueda: p.get('q') ?? '',
+    socio: p.get('socio') ?? '',
+    tipo: p.get('tipo') ?? '',
+    cultivo: p.get('cultivo') ?? '',
+    municipio: p.get('municipio') ?? '',
+    certificacion: p.get('certificacion') ?? '',
+    orden: orden === 'socio' || orden === 'superficie' ? orden : 'nombre',
+  }
+}
+
+/** ¿Hay alguna búsqueda o filtro activo? */
+export function hayFiltros(c: CriteriosFincas): boolean {
+  return Boolean(c.busqueda || c.socio || c.tipo || c.cultivo || c.municipio || c.certificacion)
 }

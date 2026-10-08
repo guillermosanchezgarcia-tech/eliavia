@@ -1,6 +1,6 @@
 import { Crosshair, ExternalLink, Plus, Save } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Cabecera, Contenido } from '../../components/Layout'
 import { EditorRecintos } from '../../components/EditorRecintos'
 import { SelectorSocio } from '../../components/SelectorSocio'
@@ -29,7 +29,7 @@ import { PROVINCIA_ALMERIA, PROVINCIAS } from '../../lib/codigosSigpac'
 import { sumaSuperficies } from '../../lib/fincas'
 import { formatearHa, HA_A_M2, hoy, numeroParaCampo, parsearNumero } from '../../lib/formato'
 import { obtenerPosicion, textoPrecision } from '../../lib/gps'
-import { municipiosDe, type RecintoBorrador } from '../../lib/sigpac'
+import { municipiosDe, type RecintoBorrador, type RecintoSigpac } from '../../lib/sigpac'
 import type { Finca, Recinto, TipoFinca, TipoInvernadero } from '../../lib/tipos'
 
 interface Formulario {
@@ -98,6 +98,8 @@ export function FormularioFinca() {
   const recintos = useRecintosDeFinca(id)
   const socioInicial = parametros.get('socio') ?? ''
   const socioPrevio = useSocio(socioInicial || undefined)
+  // Desde el mapa se puede crear una finca ya con el recinto SIGPAC consultado.
+  const desdeMapa = (useLocation().state as { recinto?: RecintoSigpac } | null)?.recinto
 
   const cargando = (id && (finca === undefined || recintos === undefined)) || (socioInicial && socioPrevio === undefined)
   if (cargando) {
@@ -115,13 +117,13 @@ export function FormularioFinca() {
     : {
         socio_id: socioPrevio?.id ?? '',
         nombre: '',
-        provincia: String(PROVINCIA_ALMERIA),
-        municipio: '',
+        provincia: String(desdeMapa?.provincia ?? PROVINCIA_ALMERIA),
+        municipio: desdeMapa ? String(desdeMapa.municipio) : '',
         tipo: '',
         tipo_invernadero: '',
         tipo_invernadero_otro: '',
-        ha: '',
-        m2: '',
+        ha: numeroParaCampo(desdeMapa?.superficie_ha),
+        m2: numeroParaCampo(desdeMapa?.superficie_ha == null ? null : desdeMapa.superficie_ha * HA_A_M2, 2),
         cultivo: '',
         campana: campanaDe(),
         certificaciones: [],
@@ -130,7 +132,15 @@ export function FormularioFinca() {
         fecha_ultima_visita: '',
         observaciones: '',
       }
-  return <FormularioDatos key={id ?? 'nueva'} finca={finca ?? null} recintosGuardados={recintos ?? []} inicial={inicial} />
+  return (
+    <FormularioDatos
+      key={id ?? 'nueva'}
+      finca={finca ?? null}
+      recintosGuardados={recintos ?? []}
+      recintoInicial={finca ? undefined : desdeMapa}
+      inicial={inicial}
+    />
+  )
 }
 
 function useMunicipios(provincia: number) {
@@ -147,9 +157,10 @@ function useMunicipios(provincia: number) {
   return lista?.provincia === provincia ? lista.datos : null
 }
 
-function FormularioDatos({ finca, recintosGuardados, inicial }: {
+function FormularioDatos({ finca, recintosGuardados, recintoInicial, inicial }: {
   finca: Finca | null
   recintosGuardados: Recinto[]
+  recintoInicial?: RecintoSigpac
   inicial: Formulario
 }) {
   const navegar = useNavigate()
@@ -157,7 +168,10 @@ function FormularioDatos({ finca, recintosGuardados, inicial }: {
   const [idNueva] = useState(() => crypto.randomUUID())
   const idFinca = finca?.id ?? idNueva
   const [datos, setDatos] = useState<Formulario>(inicial)
-  const [recintos, setRecintos] = useState<RecintoBorrador[]>(() => recintosGuardados.map(aBorrador))
+  const [recintos, setRecintos] = useState<RecintoBorrador[]>(() => [
+    ...recintosGuardados.map(aBorrador),
+    ...(recintoInicial ? [{ ...recintoInicial, clave: crypto.randomUUID(), existente: false }] : []),
+  ])
   const [errores, setErrores] = useState<Errores>({})
   const [errorGuardado, setErrorGuardado] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)

@@ -43,10 +43,11 @@ Los mapas y las referencias SIGPAC salen de servicios **públicos y gratuitos** 
   o desde la posición del GPS), tipo de invernadero, superficie en ha y m², cultivo,
   campaña, certificaciones, punto GPS con «Cómo llegar», fotos (también sin cobertura) y
   fecha de la última visita.
-- [ ] **Parte 4 · Sin conexión, remate**: guardar zonas del mapa para usarlas sin red y
-  pruebas en el campo con móviles reales.
-- [ ] **Parte 5 · Mapa**: ortofoto PNOA + capa SIGPAC, contornos de las fincas, buscar
-  parcela, «¿dónde estoy?» con su referencia SIGPAC y botón «Cómo llegar».
+- [ ] **Parte 4 · Sin conexión, remate**: descargar zonas del mapa de antemano para usarlas
+  sin red (ahora solo se ve lo que ya se había mirado) y pruebas en el campo con móviles reales.
+- [x] **Parte 5 · Mapa**: ortofoto PNOA + capa SIGPAC, contornos de las fincas, buscar
+  parcela, «Mi posición» con su referencia SIGPAC, tocar un recinto para consultarlo,
+  crear una finca desde un recinto y botón «Cómo llegar» (ver «El mapa»).
 - [ ] **Parte 6 · Informes**: totales por cultivo, municipio y certificación, y exportar a
   Excel los listados (los filtros ya están en el listado de fincas desde la parte 3).
 - [ ] **Parte 7 · Remate**: alta de técnicos desde la app, correo propio para los emails,
@@ -218,6 +219,37 @@ avisar.
 
 ---
 
+## El mapa
+
+Se abre desde la pestaña **Mapa**, desde **«Ver en el mapa»** en la ficha de una finca o de un
+socio, desde el botón **Mapa** del listado de fincas (lleva los filtros que tengas puestos) y
+desde **«¿Dónde estoy?»** del inicio (que además te localiza al abrir).
+
+- **Fondo**: la ortofoto del PNOA (por defecto) o el mapa de calles del IGN. Encima, las líneas de
+  los **recintos SIGPAC** en magenta, como en el visor oficial. Todo se cambia desde el botón de
+  capas (arriba a la derecha) y se recuerda.
+- **Fincas**: se dibuja el contorno de sus recintos (de lejos, un punto por finca). Las que solo
+  tienen punto GPS salen como un punto. Al tocar una, aparece su tarjeta con **Ver ficha** y
+  **Cómo llegar**. Las fincas sin recinto ni GPS no salen: el panel de capas dice cuántas faltan.
+- **Mi posición** (botón verde): marca dónde estás con su precisión y consulta en qué recinto SIGPAC
+  te encuentras, a qué finca pertenece (si es de alguna) y permite **crear una finca** con él.
+- **Tocar el mapa** (con el zoom cerca) consulta el recinto que hay en ese punto, igual que el
+  visor SIGPAC.
+- **Buscar parcela**: municipio, polígono y parcela (y recinto, si se quiere). Dibuja todos los
+  recintos de la parcela y dice cuáles ya están en alguna finca.
+- **Cómo llegar** abre Google Maps con la ruta hasta el centro del recinto o el punto GPS.
+
+**Sin conexión** se siguen viendo y eligiendo las fincas (están en el móvil), y el fondo solo donde
+ya se había mirado antes: las teselas visitadas se guardan en el móvil. Consultar el SIGPAC
+(tocar el mapa, mi posición, buscar parcela) **necesita cobertura**. Descargar zonas de antemano
+llegará en la parte 4.
+
+Los datos del mapa son de servicios públicos: ortofoto y mapa base © Instituto Geográfico Nacional
+(PNOA, licencia CC BY 4.0) y recintos © FEGA, Ministerio de Agricultura (SIGPAC). La app muestra esa
+atribución en el panel de capas.
+
+---
+
 ## Costes
 
 | Servicio | Plan gratuito | Cuándo pasar a pago |
@@ -250,6 +282,7 @@ campo-op/
     ├── components/            Piezas reutilizables: botones, campos, menú, cabecera…
     ├── hooks/                 Utilidades: ¿hay conexión?, ¿se puede instalar?
     ├── datos/                 Base de datos del móvil y sincronización con Supabase
+    ├── mapa/                  Mapa (Leaflet): capas PNOA y SIGPAC, dibujo de las fincas
     ├── lib/                   Conexión con Supabase, tipos, validación de NIF, formatos
     └── pages/                 Las pantallas: acceso, inicio, socios, fincas, mapa, más…
 ```

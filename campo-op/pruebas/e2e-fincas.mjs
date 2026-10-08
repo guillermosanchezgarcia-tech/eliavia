@@ -9,20 +9,16 @@
 //   node pruebas/e2e-fincas.mjs [carpeta-para-capturas]
 
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { mkdirSync } from 'node:fs'
+import { simularSigpac } from './ayudas.mjs'
 
 const { chromium, devices } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 
-const AQUI = dirname(fileURLToPath(import.meta.url))
 const BASE = process.env.APP_URL ?? 'http://localhost:4173'
 const DB = process.env.DB_CONTAINER ?? 'supabase_db_campo-op'
 const OUT = process.argv[2] ?? 'pruebas/capturas'
 const CLAVE = 'clave-segura-1'
 mkdirSync(OUT, { recursive: true })
-
-const fixture = (nombre) => readFileSync(join(AQUI, 'fixtures/sigpac', nombre), 'utf8')
 
 function sql(consulta) {
   return execFileSync('docker', ['exec', '-i', DB, 'psql', '-U', 'postgres', '-d', 'postgres', '-tA', '-c', consulta], {
@@ -44,22 +40,6 @@ async function esperarQue(nombre, fn, ms = 20000) {
     await new Promise((r) => setTimeout(r, 300))
   }
   comprobar(nombre, false, `último valor: ${JSON.stringify(ultimo)}`)
-}
-
-// Servicio del SIGPAC simulado con respuestas reales.
-async function simularSigpac(ctx) {
-  if (process.env.SIGPAC_REAL) return
-  await ctx.route('https://sigpac-hubcloud.es/**', (route) => {
-    const url = new URL(route.request().url())
-    const cabeceras = { 'access-control-allow-origin': '*', 'content-type': 'application/json' }
-    const vacio = JSON.stringify({ type: 'FeatureCollection', features: [] })
-    const p = url.pathname
-    let cuerpo = vacio
-    if (p.endsWith('/recinfobypoint/4326/-2.7366000/36.7380000.geojson') || /recinfobypoint\/4326\/-2\.73[0-9]+\/36\.73[0-9]+\.geojson/.test(p)) cuerpo = fixture('punto.json')
-    else if (p.endsWith('/recinfo/4/104/0/0/23/372/3.geojson')) cuerpo = fixture('recinto.json')
-    else if (p.endsWith('/recinfoparc/4/104/0/0/23/372.geojson')) cuerpo = fixture('parcela.json')
-    route.fulfill({ status: 200, headers: cabeceras, body: cuerpo })
-  })
 }
 
 const errores = []
