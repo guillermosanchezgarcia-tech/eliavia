@@ -7,6 +7,7 @@
 | Extremo a extremo: socios | Altas, validación, sin conexión, conflictos, permisos, 2.500 socios | `node pruebas/e2e-socios.mjs` (ver abajo) |
 | Extremo a extremo: mapa | Capas PNOA y SIGPAC, fincas dibujadas, consulta de recintos, mi posición, buscar parcela, crear finca desde un recinto, filtros, sin conexión | `node pruebas/e2e-mapa.mjs` (ver abajo) |
 | Extremo a extremo: informes | Totales por cultivo/municipio/certificación/tipo, filtros, enlaces a la lista de fincas y Excel (se abre el .xlsx descargado), permisos, sin conexión | `node pruebas/e2e-informes.mjs` (ver abajo) |
+| Extremo a extremo: mapas sin conexión | Descargar alrededor de las fincas y una zona del mapa, verlas sin red, cancelar, cortes de red, completar, zonas enormes, borrar | `node pruebas/e2e-zonas.mjs` (ver abajo) |
 | Extremo a extremo: fincas | Fincas con recintos SIGPAC, GPS, fotos (también sin conexión y rechazadas), filtros, borrado en cascada | `node pruebas/e2e-fincas.mjs` (ver abajo) |
 
 ## Prueba de extremo a extremo
@@ -37,6 +38,8 @@ bash pruebas/preparar-supabase-local.sh     # empezar de cero
 node pruebas/e2e-mapa.mjs
 bash pruebas/preparar-supabase-local.sh     # empezar de cero
 node pruebas/e2e-informes.mjs
+bash pruebas/preparar-supabase-local.sh     # empezar de cero
+node pruebas/e2e-zonas.mjs
 ```
 
 Antes de repetir una prueba hay que volver a ejecutar el paso 2 para empezar con la base de datos vacía.

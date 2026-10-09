@@ -14,6 +14,7 @@ import { ConfiguracionPendiente, CuentaDesactivada, PantallaCargando, PantallaEr
 import { Inicio } from './pages/Inicio'
 import { Informes } from './pages/informes/Informes'
 import { CambiarClave } from './pages/mas/CambiarClave'
+import { MapasSinConexion } from './pages/mas/MapasSinConexion'
 import { Mas } from './pages/mas/Mas'
 import { Sincronizacion } from './pages/mas/Sincronizacion'
 import { Usuarios } from './pages/mas/Usuarios'
@@ -84,6 +85,7 @@ function Rutas() {
         <Route path="mas" element={<Mas />} />
         <Route path="mas/clave" element={<CambiarClave />} />
         <Route path="mas/sincronizacion" element={<Sincronizacion />} />
+        <Route path="mas/mapas" element={<MapasSinConexion />} />
         <Route path="nueva-clave" element={<CambiarClave />} />
         <Route
           path="mas/usuarios"

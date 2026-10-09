@@ -7,6 +7,7 @@
 
 import Dexie, { type EntityTable } from 'dexie'
 import type { Finca, Foto, Perfil, Recinto, Socio } from '../lib/tipos'
+import type { Area } from '../mapa/teselas'
 
 /** Tablas que se copian en el móvil y se sincronizan en los dos sentidos. */
 export const TABLAS = ['socios', 'fincas', 'recintos', 'fotos'] as const
@@ -48,6 +49,28 @@ export interface Archivo {
   creado: string
 }
 
+/**
+ * Zona del mapa descargada para verla sin cobertura (parte 4). Las imágenes
+ * van aparte, en el almacén de caché del navegador (`campo-op-zona-<id>`);
+ * aquí solo se apunta qué es cada zona.
+ */
+export interface ZonaMapa {
+  id: string
+  nombre: string
+  tipo: 'pantalla' | 'fincas'
+  /** Rectángulos descargados y hasta qué nivel de detalle. */
+  areas: Area[]
+  /** Detalle máximo elegido (17, 18 o 19). */
+  detalle: number
+  teselas: number
+  descargadas: number
+  fallidas: number
+  bytes: number
+  estado: 'descargando' | 'completa' | 'incompleta'
+  creada: string
+  actualizada: string
+}
+
 export interface Ajuste {
   clave: string
   valor: unknown
@@ -62,6 +85,7 @@ export const db = new Dexie('campo-op') as Dexie & {
   pendientes: EntityTable<Pendiente, 'num'>
   ajustes: EntityTable<Ajuste, 'clave'>
   archivos: EntityTable<Archivo, 'id'>
+  zonas: EntityTable<ZonaMapa, 'id'>
 }
 
 // Solo se declaran los campos por los que se busca; el resto se guarda igual.
@@ -78,6 +102,12 @@ db.version(1).stores({
 // Versión 2 (parte 3): archivos de las fotos.
 db.version(2).stores({
   archivos: 'id, finca_id, subido',
+})
+
+// Versión 3 (parte 4): zonas del mapa descargadas.
+// No se vacían al cerrar sesión: son imágenes públicas del mapa, no datos de la OP.
+db.version(3).stores({
+  zonas: 'id, creada',
 })
 
 /** Campos que se pueden enviar a Supabase. El resto (fechas de creación,

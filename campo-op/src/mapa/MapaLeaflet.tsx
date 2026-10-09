@@ -35,6 +35,8 @@ interface Props {
   base: BaseMapa
   verSigpac: boolean
   verFincas: boolean
+  /** Rectángulos de las zonas descargadas para usar sin conexión (vacío = no se dibujan). */
+  zonas: Limites[]
   ajuste: Ajuste | null
   /** Vista con la que abrir el mapa (la última que se usó). Si no hay, se ajusta a `limitesIniciales`. */
   vistaInicial: { centro: [number, number]; zoom: number } | null
@@ -42,7 +44,7 @@ interface Props {
   limitesIniciales: Limites | null
   alElegirFinca: (id: string) => void
   alTocar: (latitud: number, longitud: number, zoom: number) => void
-  alMoverVista: (centro: [number, number], zoom: number) => void
+  alMoverVista: (centro: [number, number], zoom: number, limites: Limites) => void
   className?: string
 }
 
@@ -60,13 +62,14 @@ interface CapasFinca {
 
 /** Mapa de Leaflet envuelto para React. Dibuja lo que le dan; no consulta datos. */
 export function MapaLeaflet(props: Props) {
-  const { fincas, fincaActiva, resaltados, posicion, base, verSigpac, verFincas, ajuste, limitesIniciales, className } = props
+  const { fincas, fincaActiva, resaltados, posicion, base, verSigpac, verFincas, zonas, ajuste, limitesIniciales, className } = props
 
   const contenedor = useRef<HTMLDivElement>(null)
   const mapa = useRef<L.Map | null>(null)
   const lienzo = useRef<L.Canvas | null>(null)
   const capaBase = useRef<L.TileLayer | null>(null)
-  const capaSigpac = useRef<L.TileLayer.WMS | null>(null)
+  const capaSigpac = useRef<L.TileLayer | null>(null)
+  const grupoZonas = useRef<L.LayerGroup>(L.layerGroup())
   const grupoContornos = useRef<L.LayerGroup>(L.layerGroup())
   const grupoLejos = useRef<L.LayerGroup>(L.layerGroup())
   const grupoMarcas = useRef<L.LayerGroup>(L.layerGroup())
@@ -103,7 +106,7 @@ export function MapaLeaflet(props: Props) {
     L.control.attribution({ prefix: false, position: 'bottomleft' }).addTo(m)
 
     // Contornos por debajo de las marcas, y todo por encima del SIGPAC.
-    for (const g of [grupoContornos, grupoLejos, grupoMarcas, grupoResaltados, grupoPosicion]) g.current.addTo(m)
+    for (const g of [grupoZonas, grupoContornos, grupoLejos, grupoMarcas, grupoResaltados, grupoPosicion]) g.current.addTo(m)
 
     const alternarModo = () => {
       const cerca = m.getZoom() >= ZOOM_CONTORNOS
@@ -120,16 +123,23 @@ export function MapaLeaflet(props: Props) {
     ;(m as L.Map & { _alternarModo?: () => void })._alternarModo = alternarModo
 
     m.on('click', (e) => llamadas.current.alTocar(e.latlng.lat, e.latlng.lng, m.getZoom()))
-    m.on('moveend', () => {
+    const avisarVista = () => {
       const c = m.getCenter()
-      llamadas.current.alMoverVista([c.lat, c.lng], m.getZoom())
-    })
+      const b = m.getBounds()
+      llamadas.current.alMoverVista([c.lat, c.lng], m.getZoom(), [
+        [b.getSouth(), b.getWest()],
+        [b.getNorth(), b.getEast()],
+      ])
+    }
+    m.on('moveend', avisarVista)
+    m.whenReady(avisarVista)
 
     // El mapa necesita avisar cuando cambia el tamaño de su caja (girar el móvil, etc.).
     const observador = new ResizeObserver(() => m.invalidateSize())
     observador.observe(el)
 
     const fincasDibujadas = porFinca.current
+    const zonasGrupo = grupoZonas.current
     const contornos = grupoContornos.current
     const lejos = grupoLejos.current
     const marcas = grupoMarcas.current
@@ -148,7 +158,7 @@ export function MapaLeaflet(props: Props) {
       capaBase.current = null
       capaSigpac.current = null
       fincasDibujadas.clear()
-      for (const g of [contornos, lejos, marcas, resaltadosGrupo, posicionGrupo]) g.clearLayers()
+      for (const g of [zonasGrupo, contornos, lejos, marcas, resaltadosGrupo, posicionGrupo]) g.clearLayers()
     }
   }, [])
 
@@ -173,6 +183,26 @@ export function MapaLeaflet(props: Props) {
       capaSigpac.current = null
     }
   }, [verSigpac])
+
+  // ---- Zonas descargadas ----------------------------------------------------------
+  useEffect(() => {
+    const grupo = grupoZonas.current
+    grupo.clearLayers()
+    if (!lienzo.current) return
+    for (const z of zonas) {
+      grupo.addLayer(
+        L.rectangle(z, {
+          color: '#ffffff',
+          weight: 2,
+          dashArray: '6 6',
+          fillColor: '#ffffff',
+          fillOpacity: 0.06,
+          renderer: lienzo.current,
+          interactive: false,
+        }),
+      )
+    }
+  }, [zonas])
 
   // ---- Fincas -------------------------------------------------------------------
   useEffect(() => {

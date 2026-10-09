@@ -1,10 +1,13 @@
-import { Layers, LoaderCircle, LocateFixed, Minus, Plus, Search, X } from 'lucide-react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { CloudDownload, Layers, LoaderCircle, LocateFixed, Minus, Plus, Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { DialogoBuscarReferencia } from '../../components/BuscarReferencia'
+import { DialogoDescargarZona } from '../../components/DescargarZona'
 import { IndicadorSincronizacion } from '../../components/IndicadorSincronizacion'
 import { Etiqueta, Opciones } from '../../components/ui'
 import { useFincas, useRecintos, useSocios } from '../../datos/consultas'
+import { db } from '../../datos/db'
 import { useConexion } from '../../hooks/useConexion'
 import { useCriteriosFincas } from '../../hooks/useCriteriosFincas'
 import { cx } from '../../lib/cx'
@@ -13,8 +16,10 @@ import { mensajeDeError } from '../../lib/errores'
 import { obtenerPosicion, type Posicion } from '../../lib/gps'
 import { ErrorSigpac, recintoEnPunto, type RecintoSigpac } from '../../lib/sigpac'
 import { NOMBRES_BASE, ZOOM_CONSULTA, type BaseMapa } from '../../mapa/capas'
-import { limitesDe, prepararFincas, unirLimites } from '../../mapa/datos'
+import { limitesDe, prepararFincas, unirLimites, type Limites } from '../../mapa/datos'
 import { MapaLeaflet, type Ajuste, type PosicionMapa, type Resaltado } from '../../mapa/MapaLeaflet'
+import { areasDePantalla } from '../../mapa/teselas'
+import { useDescarga } from '../../mapa/zonas'
 import { TarjetaFinca, TarjetaRecintos } from './TarjetasMapa'
 
 const CLAVE_CAPAS = 'campo-op:mapa:capas'
@@ -24,6 +29,8 @@ interface Capas {
   base: BaseMapa
   sigpac: boolean
   fincas: boolean
+  /** Marcar las zonas descargadas para usar sin conexión. */
+  zonas?: boolean
 }
 interface Vista {
   centro: [number, number]
@@ -52,6 +59,12 @@ export function Mapa() {
   const [parametros, setParametros] = useSearchParams()
   const fincaParam = parametros.get('finca')
   const querPosicion = parametros.get('pos') === '1'
+  const quiereDescargar = parametros.get('descargar') === '1'
+  // «?zona=sur,oeste,norte,este» (desde Mapas sin conexión): se abre encuadrando esa zona.
+  const zonaParam = useMemo(() => {
+    const n = (parametros.get('zona') ?? '').split(',').map(Number)
+    return n.length === 4 && n.every(Number.isFinite) ? ([[n[0], n[1]], [n[2], n[3]]] as Limites) : null
+  }, [parametros])
   const conexion = useConexion()
   const criterios = useCriteriosFincas()
   const filtrando = hayFiltros(criterios)
@@ -71,9 +84,10 @@ export function Mapa() {
   const datos = useMemo(() => (listo ? prepararFincas(filtradas, recintos, socios) : []), [listo, filtradas, recintos, socios])
   const limitesIniciales = useMemo(() => {
     if (!listo) return null
+    if (zonaParam) return zonaParam
     const suya = fincaParam ? datos.find((d) => d.id === fincaParam)?.limites : null
     return suya ?? unirLimites(datos.map((d) => d.limites))
-  }, [listo, datos, fincaParam])
+  }, [listo, datos, fincaParam, zonaParam])
 
   // ---- Estado del mapa ---------------------------------------------------------
   const [capas, setCapas] = useState<Capas>(
@@ -84,7 +98,9 @@ export function Mapa() {
         fincas: true,
       },
   )
-  const [vistaGuardada] = useState<Vista | null>(() => (fincaParam || querPosicion ? null : leer<Vista>(CLAVE_VISTA)))
+  const [vistaGuardada] = useState<Vista | null>(() =>
+    fincaParam || querPosicion || zonaParam ? null : leer<Vista>(CLAVE_VISTA),
+  )
   const [seleccion, setSeleccion] = useState<Seleccion | null>(fincaParam ? { tipo: 'finca', id: fincaParam } : null)
   const [posicion, setPosicion] = useState<PosicionMapa | null>(null)
   const [ajuste, setAjuste] = useState<Ajuste | null>(null)
@@ -94,6 +110,17 @@ export function Mapa() {
   const [consultando, setConsultando] = useState(false)
   const [panelCapas, setPanelCapas] = useState(false)
   const [buscando, setBuscando] = useState(false)
+  const [descargando, setDescargando] = useState(quiereDescargar)
+  const [nombreZona] = useState(() => `Zona del ${new Date().toLocaleDateString('es-ES')}`)
+  const limitesVista = useRef<Limites | null>(null)
+  const [limitesAlDescargar, setLimitesAlDescargar] = useState<Limites | null>(null)
+  const progreso = useDescarga()
+  const zonasGuardadas = useLiveQuery(() => db.zonas.toArray(), [])
+  const verZonas = Boolean(capas.zonas) || zonaParam !== null
+  const rectangulosZonas = useMemo(
+    () => (verZonas ? (zonasGuardadas ?? []).flatMap((z) => z.areas.filter((a) => a.zMax >= 14).map((a) => a.limites)) : []),
+    [verZonas, zonasGuardadas],
+  )
   const consulta = useRef(0)
   const guardadoVista = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -210,7 +237,8 @@ export function Mapa() {
     setSeleccion({ tipo: 'finca', id })
   }, [])
 
-  const alMoverVista = useCallback((centro: [number, number], zoom: number) => {
+  const alMoverVista = useCallback((centro: [number, number], zoom: number, limites: Limites) => {
+    limitesVista.current = limites
     clearTimeout(guardadoVista.current)
     guardadoVista.current = setTimeout(() => guardar(CLAVE_VISTA, { centro, zoom }), 600)
   }, [])
@@ -224,6 +252,20 @@ export function Mapa() {
           }))
         : [],
     [seleccion],
+  )
+
+  function abrirDescarga() {
+    setPanelCapas(false)
+    setLimitesAlDescargar(limitesVista.current)
+    setDescargando(true)
+  }
+  // Si se llega con «?descargar=1», se coge la vista en cuanto el mapa la conoce.
+  useEffect(() => {
+    if (quiereDescargar) setLimitesAlDescargar(limitesVista.current)
+  }, [quiereDescargar])
+  const areasPantalla = useCallback(
+    (detalle: number) => (limitesAlDescargar ? areasDePantalla(limitesAlDescargar, detalle) : []),
+    [limitesAlDescargar],
   )
 
   const quitarFiltros = () => setParametros(fincaParam ? { finca: fincaParam } : {}, { replace: true })
@@ -240,6 +282,7 @@ export function Mapa() {
           base={capas.base}
           verSigpac={capas.sigpac}
           verFincas={capas.fincas}
+          zonas={rectangulosZonas}
           ajuste={ajuste}
           vistaInicial={vistaGuardada}
           limitesIniciales={limitesIniciales}
@@ -297,8 +340,20 @@ export function Mapa() {
                   <Etiqueta marcada={capas.fincas} onClick={() => cambiarCapas({ fincas: !capas.fincas })}>
                     Fincas
                   </Etiqueta>
+                  <Etiqueta marcada={Boolean(capas.zonas)} onClick={() => cambiarCapas({ zonas: !capas.zonas })}>
+                    Zonas sin conexión
+                  </Etiqueta>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={abrirDescarga}
+                disabled={Boolean(progreso)}
+                className="flex min-h-11 w-full items-center gap-2 rounded-xl bg-marca-50 px-3 text-left text-sm font-semibold text-marca-800 hover:bg-marca-100 disabled:opacity-60"
+              >
+                <CloudDownload className="size-5 shrink-0" aria-hidden />
+                {progreso ? 'Descargando otra zona…' : 'Descargar esta zona para usarla sin conexión'}
+              </button>
               <p className="border-t border-stone-100 pt-3 text-sm text-stone-600">
                 En el mapa: <strong>{datos.length}</strong> de {filtradas.length} {filtradas.length === 1 ? 'finca' : 'fincas'}.
                 {datos.length < filtradas.length && (
@@ -336,8 +391,25 @@ export function Mapa() {
               className="pointer-events-auto w-fit max-w-full rounded-xl bg-amber-100 px-3 py-2 text-sm text-amber-900 shadow-lg"
               role="status"
             >
-              Sin conexión: el fondo del mapa solo se ve donde ya lo habías mirado.
+              Sin conexión: el mapa se ve en las{' '}
+              <Link to="/mas/mapas" className="font-semibold underline">
+                zonas descargadas
+              </Link>{' '}
+              y donde ya lo habías mirado.
             </p>
+          )}
+
+          {progreso && !panelCapas && (
+            <Link
+              to="/mas/mapas"
+              className="pointer-events-auto flex w-fit max-w-full items-center gap-2 rounded-full bg-white py-2 pr-4 pl-3 text-sm text-stone-700 shadow-lg ring-1 ring-stone-200"
+            >
+              <LoaderCircle className="size-4 shrink-0 animate-spin text-marca-700" aria-hidden />
+              <span className="min-w-0 truncate">
+                Descargando «{progreso.nombre}»:{' '}
+                <strong className="tabular-nums">{progreso.total ? Math.floor((progreso.hechas / progreso.total) * 100) : 0} %</strong>
+              </span>
+            </Link>
           )}
         </div>
 
@@ -427,6 +499,19 @@ export function Mapa() {
           )}
         </div>
       </div>
+
+      <DialogoDescargarZona
+        abierto={descargando && limitesAlDescargar !== null}
+        alCerrar={() => {
+          setDescargando(false)
+          if (quiereDescargar) setParametros({}, { replace: true })
+        }}
+        titulo="Descargar esta zona"
+        tipo="pantalla"
+        nombreInicial={nombreZona}
+        areasPara={areasPantalla}
+        explicacion="Se descarga la ortofoto y los recintos SIGPAC de lo que ves ahora en pantalla, para verlo sin cobertura."
+      />
 
       <DialogoBuscarReferencia
         abierto={buscando}

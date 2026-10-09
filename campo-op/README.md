@@ -1,6 +1,6 @@
 # Campo OP · Socios y fincas
 
-Aplicación para los técnicos de campo de una OPFH de Almería: socios, fincas, referencias
+Aplicación para los técnicos de campo de AGRO NATURE SAT, OPFH de Almería: socios, fincas, referencias
 SIGPAC, mapa con ortofoto y trabajo sin conexión en el campo.
 
 - **Una sola app web** que funciona en ordenador y en móvil, y que se instala en el móvil
@@ -43,8 +43,9 @@ Los mapas y las referencias SIGPAC salen de servicios **públicos y gratuitos** 
   o desde la posición del GPS), tipo de invernadero, superficie en ha y m², cultivo,
   campaña, certificaciones, punto GPS con «Cómo llegar», fotos (también sin cobertura) y
   fecha de la última visita.
-- [ ] **Parte 4 · Sin conexión, remate**: descargar zonas del mapa de antemano para usarlas
-  sin red (ahora solo se ve lo que ya se había mirado) y pruebas en el campo con móviles reales.
+- [x] **Parte 4 · Mapas sin conexión**: descargar de antemano la ortofoto y los recintos SIGPAC
+  alrededor de las fincas o de cualquier zona del mapa, para verlos sin cobertura (ver «Mapas sin
+  conexión»). Falta probarlo en el campo con móviles reales (ver la lista de comprobación).
 - [x] **Parte 5 · Mapa**: ortofoto PNOA + capa SIGPAC, contornos de las fincas, buscar
   parcela, «Mi posición» con su referencia SIGPAC, tocar un recinto para consultarlo,
   crear una finca desde un recinto y botón «Cómo llegar» (ver «El mapa»).
@@ -128,7 +129,7 @@ siguientes se crean como **técnicos** (puedes cambiarlo luego desde la app).
    |---|---|
    | `VITE_SUPABASE_URL` | la Project URL del paso 5 |
    | `VITE_SUPABASE_PUBLISHABLE_KEY` | la Publishable key del paso 5 |
-   | `VITE_NOMBRE_OP` | el nombre de tu OP, p. ej. `OPFH Campo de Dalías` |
+   | `VITE_NOMBRE_OP` | el nombre de tu OP, `AGRO NATURE SAT` |
 
 5. Pulsa **Deploy**. En un minuto tendrás una dirección del tipo
    `https://campo-op.netlify.app` (se puede cambiar en *Site configuration → Change site name*).
@@ -255,8 +256,8 @@ desde **«¿Dónde estoy?»** del inicio (que además te localiza al abrir).
 
 **Sin conexión** se siguen viendo y eligiendo las fincas (están en el móvil), y el fondo solo donde
 ya se había mirado antes: las teselas visitadas se guardan en el móvil. Consultar el SIGPAC
-(tocar el mapa, mi posición, buscar parcela) **necesita cobertura**. Descargar zonas de antemano
-llegará en la parte 4.
+(tocar el mapa, mi posición, buscar parcela) **necesita cobertura**. Para tener el fondo sin
+cobertura en una zona concreta, descárgala antes (ver «Mapas sin conexión»).
 
 Los datos del mapa son de servicios públicos: ortofoto y mapa base © Instituto Geográfico Nacional
 (PNOA, licencia CC BY 4.0) y recintos © FEGA, Ministerio de Agricultura (SIGPAC). La app muestra esa
@@ -306,6 +307,46 @@ Se abren desde **Inicio → Informes** o **Más → Informes y Excel**.
 
 ---
 
+## Mapas sin conexión
+
+En **Más → Mapas sin conexión** (o desde el botón de capas del mapa) se descarga la **ortofoto** y
+las **líneas de los recintos SIGPAC** para verlas en el campo sin cobertura. Mejor con wifi, antes
+de salir.
+
+- **Alrededor de mis fincas**: cada finca con unos 150 m alrededor, con detalle, y toda la comarca
+  de las fincas con menos detalle para orientarse. Cuando se den de alta fincas nuevas, el botón
+  **«Añadir fincas nuevas»** descarga solo lo que falte.
+- **Una zona del mapa**: mueve el mapa hasta el paraje que quieras, abre el botón de capas y pulsa
+  **«Descargar esta zona para usarla sin conexión»**. Se descarga lo que se ve en pantalla.
+- **Detalle**: *Básico* (nivel 17), *Normal* (18, recomendado) o *Máximo* (19, el mayor del PNOA,
+  ocupa unas cuatro veces más). Antes de empezar la app dice cuánto ocupará y cuánto espacio queda.
+  Una zona demasiado grande (más de 25.000 imágenes, unos 400 MB) no se deja descargar.
+- Se puede **seguir usando la app** mientras descarga; en el mapa se ve el porcentaje.
+- Si se **cancela**, se **pierde la cobertura** o se **cierra la app** a mitad, lo descargado se
+  conserva: la zona queda *incompleta* y **«Completar»** descarga solo lo que falta.
+- En el mapa, la opción **«Zonas sin conexión»** del panel de capas marca con línea discontinua lo
+  descargado. **«Ver en el mapa»** lleva a cada zona.
+- **Borrar** una zona libera su espacio. Las zonas no se borran al cerrar sesión (son imágenes
+  públicas del mapa, no datos de la OP).
+
+Para que el móvil no borre los mapas si se queda sin espacio, conviene tener la app **instalada**
+en la pantalla de inicio (la app se lo pide al navegador al descargar).
+
+Sin cobertura sigue sin poder **consultarse** el SIGPAC (tocar un recinto, mi posición, buscar
+parcela): eso lo responde el servidor del FEGA en el momento.
+
+### Lista de comprobación en el campo (con móviles reales)
+
+1. Con wifi, descarga «Alrededor de mis fincas» en detalle Normal en un Android y un iPhone.
+2. Vete a una finca sin cobertura (o pon el móvil en modo avión) y abre el **Mapa**: debe verse la
+   ortofoto y las líneas SIGPAC alrededor de las fincas.
+3. Pulsa **Mi posición**: debe marcarte en el mapa (el GPS no necesita cobertura).
+4. Crea una finca o cambia una visita sin cobertura y comprueba que se envía al volver la red.
+5. Al día siguiente, sin haber abierto la app, comprueba que las zonas siguen en Más → Mapas sin
+   conexión.
+
+---
+
 ## Estructura del proyecto
 
 ```
@@ -329,7 +370,7 @@ campo-op/
     ├── components/            Piezas reutilizables: botones, campos, menú, cabecera…
     ├── hooks/                 Utilidades: ¿hay conexión?, ¿se puede instalar?, exportar a Excel
     ├── datos/                 Base de datos del móvil y sincronización con Supabase
-    ├── mapa/                  Mapa (Leaflet): capas PNOA y SIGPAC, dibujo de las fincas
+    ├── mapa/                  Mapa (Leaflet): capas PNOA y SIGPAC, fincas y zonas sin conexión
     ├── lib/                   Conexión con Supabase, tipos, validación de NIF, formatos
     └── pages/                 Las pantallas: acceso, inicio, socios, fincas, mapa, informes, más…
 ```

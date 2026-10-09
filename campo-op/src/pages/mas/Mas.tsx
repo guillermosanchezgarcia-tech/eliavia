@@ -1,9 +1,13 @@
-import { ChartNoAxesColumn, ChevronRight, Download, KeyRound, LogOut, Pencil, RefreshCw, Share, Smartphone, UserCog } from 'lucide-react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { ChartNoAxesColumn, ChevronRight, Download, KeyRound, LogOut, MapPinned, Pencil, RefreshCw, Share, Smartphone, UserCog } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useAuth, usePerfil } from '../../auth/contexto'
 import { Cabecera, Contenido } from '../../components/Layout'
 import { Aviso, Boton, Campo, Dialogo, FilaEnlace, Insignia, Tarjeta } from '../../components/ui'
 import { useAjuste, usePendientes } from '../../datos/consultas'
+import { db } from '../../datos/db'
+import { formatearBytes } from '../../mapa/teselas'
+import { useDescarga } from '../../mapa/zonas'
 import { CLAVE_ULTIMA_SINCRONIZACION } from '../../datos/sincronizacion'
 import { config } from '../../config'
 import { useConexion } from '../../hooks/useConexion'
@@ -23,6 +27,8 @@ export function Mas() {
   const ultima = useAjuste<string>(CLAVE_ULTIMA_SINCRONIZACION)
   const sinEnviar = pendientes?.length ?? 0
   const conError = pendientes?.filter((p) => p.error).length ?? 0
+  const zonas = useLiveQuery(() => db.zonas.toArray(), [])
+  const descarga = useDescarga()
 
   async function salir() {
     setSaliendo(true)
@@ -84,6 +90,19 @@ export function Mas() {
                 : sinEnviar
                   ? `${sinEnviar} ${sinEnviar === 1 ? 'cambio' : 'cambios'} sin enviar`
                   : `Al día · última ${haceCuanto(ultima)}`
+            }
+            derecha={<Flecha />}
+          />
+          <FilaEnlace
+            a="/mas/mapas"
+            icono={MapPinned}
+            titulo="Mapas sin conexión"
+            detalle={
+              descarga
+                ? `Descargando… ${descarga.total ? Math.floor((descarga.hechas / descarga.total) * 100) : 0} %`
+                : zonas?.length
+                  ? `${zonas.length} ${zonas.length === 1 ? 'zona' : 'zonas'} · ${formatearBytes(zonas.reduce((s, z) => s + z.bytes, 0))}`
+                  : 'Descarga el mapa para verlo sin cobertura'
             }
             derecha={<Flecha />}
           />

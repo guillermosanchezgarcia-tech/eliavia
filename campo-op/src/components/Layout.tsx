@@ -3,13 +3,14 @@
 //   · Ordenador: menú lateral a la izquierda.
 
 import { ArrowLeft, House, Map as IconoMapa, Menu, Sprout, Users, type LucideIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { usePerfil } from '../auth/contexto'
 import { config } from '../config'
 import { cx } from '../lib/cx'
 import { NOMBRES_ROL } from '../lib/tipos'
 import { MotorSincronizacion } from '../datos/MotorSincronizacion'
+import { repararZonasInterrumpidas } from '../mapa/zonas'
 import { IndicadorSincronizacion } from './IndicadorSincronizacion'
 import { Logo } from './Logo'
 
@@ -28,6 +29,10 @@ const SECCIONES: Seccion[] = [
 ]
 
 export function Layout() {
+  // Si la app se cerró en mitad de una descarga del mapa, esa zona queda «incompleta».
+  useEffect(() => {
+    void repararZonasInterrumpidas()
+  }, [])
   return (
     <div className="min-h-dvh lg:pl-72">
       <MenuLateral />
